@@ -28,7 +28,7 @@ O modelo treinado na Parte B passa a funcionar dentro do assistente da Parte A, 
 
 ```mermaid
 flowchart TB
-    F["Front-end<br/>React + Vite + Tailwind"] -->|HTTP/JSON e streaming| B
+    F["Front-end<br/>React + Vite + Tailwind"]
     subgraph B["Back-end · monólito Spring Boot 4"]
         direction LR
         CAT["Catálogo"]
@@ -36,8 +36,10 @@ flowchart TB
         PED["Pedidos"]
         AS["Assistente IA<br/>agentes + servidor MCP"]
     end
-    B --> DB[("PostgreSQL + pgvector")]
-    AS --> OL["Ollama (LLM local)"]
+    F -->|HTTP/JSON e streaming| B
+    CAT & CAR & PED -->|JPA| DB[("PostgreSQL + pgvector")]
+    AS -->|vetores| DB
+    AS -->|chat e embeddings| OL["Ollama (LLM local)"]
     ML["Parte B: ML em Python"] -.->|modelo ajustado| OL
 ```
 

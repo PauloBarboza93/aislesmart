@@ -47,7 +47,7 @@ Tudo roda no seu computador: o navegador com o front-end, um único back-end com
 
 ```mermaid
 flowchart TB
-    F["Front-end (navegador)<br/>React + Vite + Tailwind · porta 5173"] -->|HTTP/JSON e streaming| B
+    F["Front-end (navegador)<br/>React + Vite + Tailwind · porta 5173"]
     subgraph B["Back-end · monólito Spring Boot 4 (porta 8080)"]
         direction LR
         CAT["Catálogo<br/>produtos e busca"]
@@ -55,7 +55,9 @@ flowchart TB
         PED["Pedidos<br/>pedido simulado"]
         AS["Assistente IA<br/>agentes + servidor MCP"]
     end
-    B -->|JPA e vetores| DB[("PostgreSQL + pgvector<br/>Docker · porta 5432")]
+    F -->|HTTP/JSON e streaming| B
+    CAT & CAR & PED -->|JPA| DB[("PostgreSQL + pgvector<br/>Docker · porta 5432")]
+    AS -->|vetores| DB
     AS -->|chat e embeddings| OL["Ollama (Windows, GPU)<br/>qwen3:8b + nomic-embed-text"]
     ML["Parte B: ML em Python<br/>WSL2 · treina o modelo ajustado"] -.->|modelo treinado| OL
 ```
