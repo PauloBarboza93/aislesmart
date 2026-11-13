@@ -1,0 +1,30 @@
+# Segredos e configurações locais (nunca enviar ao GitHub)
+.env
+.env.*
+!.env.example
+
+# Java / Maven
+backend/target/
+*.class
+*.log
+
+# Node / front-end
+node_modules/
+frontend/dist/
+
+# Python / Machine Learning
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+ml/modelos/
+*.gguf
+*.safetensors
+
+# IDEs e sistema operacional
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
