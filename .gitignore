@@ -28,3 +28,4 @@ ml/modelos/
 *.iml
 .DS_Store
 Thumbs.db
+*:Zone.Identifier
