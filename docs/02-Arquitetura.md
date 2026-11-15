@@ -6,7 +6,7 @@ Nov 12, 2026
 
 Este documento descreve **como** o AisleSmart é organizado por dentro: quais partes existem, como elas conversam e onde cada uma roda. O 01-PRD diz **o que** construir; este diz como montar.
 
-- **Status:** rascunho v0.2, em revisão por Oliveira.
+- **Status:** rascunho v0.2, em revisão por Paulo Oliveira.
 - **Base:** decisões tomadas na seção 8 do 01-PRD.
 - **Siglas:** toda sigla aparece com o significado entre parênteses; o glossário completo está na seção 11 do 01-PRD.
 - **Próximo documento:** 03-Modelo de dados.

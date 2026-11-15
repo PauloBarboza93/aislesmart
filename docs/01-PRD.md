@@ -1,6 +1,6 @@
 # 01-PRD — AisleSmart
 
-Nov 4, 2026 · @Oliveira
+Nov 4, 2026 · Paulo Oliveira
 
 ## Como ler este documento
 
@@ -8,7 +8,7 @@ Este PRD define **o que** o AisleSmart vai fazer e **por quê**, antes de qualqu
 
 Num projeto em que a IA escreve o código, o PRD é o seu principal instrumento de controle. A IA de código vai ler este documento e gerar o que está escrito aqui. Se algo estiver vago, ela vai inventar.
 
-- **Status:** rascunho v0.2, em revisão por Oliveira.
+- **Status:** rascunho v0.2, em revisão por Paulo Oliveira.
 - **Nome do projeto:** AisleSmart ("aisle" é o corredor do supermercado e "smart" é inteligente: um "corredor inteligente").
 - **Documentos seguintes:** 02-Arquitetura, 03-Modelo de dados, 04-Contratos de API, 05-Ferramentas MCP, 06-Agentes, 07-Machine Learning.
 - **Siglas:** toda sigla aparece com o significado entre parênteses na primeira vez, e o glossário completo está na seção 11.
@@ -31,7 +31,7 @@ O projeto tem duas partes:
 
 ## 2. Objetivos
 
-O projeto tem dois tipos de objetivo: o que Oliveira quer **aprender** e o que o produto precisa **entregar**.
+O projeto tem dois tipos de objetivo: o que Paulo Oliveira quer **aprender** e o que o produto precisa **entregar**.
 
 **Objetivos de aprendizado**
 
@@ -266,14 +266,14 @@ O MVP está pronto quando todas as 10 histórias passam nos critérios de aceite
 | Acerto do assistente | 18 de 20 perguntas (90%) | Conjunto de perguntas de teste |
 | Produtos inventados | Zero | Conferir cada sugestão contra o catálogo |
 | Ações sem confirmação | Zero | Testes da HU-08 |
-| Projeto explicável | Oliveira consegue explicar cada parte em 5 minutos | Ensaio de apresentação |
+| Projeto explicável | Paulo Oliveira consegue explicar cada parte em 5 minutos | Ensaio de apresentação |
 | Portfólio | README com diagrama, prints e vídeo de demo | Repositório no GitHub |
 | Modelo e dados publicados | 1 modelo ajustado + 1 conjunto de dados no Hugging Face | Páginas no Hugging Face com documentação |
 | Pesquisa e artigo | Comparação de modelos com métricas + 1 artigo publicado | Relatório no GitHub e link do artigo |
 
 ## 10. Riscos e cuidados
 
-O maior risco de um primeiro projeto com IA é a IA gerar muito código que Oliveira ainda não entende.
+O maior risco de um primeiro projeto com IA é a IA gerar muito código que Paulo Oliveira ainda não entende.
 
 | Risco | Como evitar |
 | --- | --- |

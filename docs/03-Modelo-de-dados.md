@@ -1,12 +1,12 @@
 # 03-Modelo de dados — AisleSmart
 
-Nov 13, 2026 · @Oliveira
+Nov 13, 2026 · Paulo Oliveira
 
 ## Como ler este documento
 
 Este documento define **quais dados o AisleSmart guarda e como eles se ligam**: tabelas, campos, regras e a parte do banco usada pela IA (vetores do RAG e memória do chat). O 01-PRD diz o que construir, o 02-Arquitetura diz como montar, e este documento diz o que fica guardado no banco.
 
-- **Status:** rascunho v0.1, em revisão por Oliveira.
+- **Status:** rascunho v0.1, em revisão por Paulo Oliveira.
 - **Base:** histórias de usuário do 01-PRD (HU-01 a HU-10) e regras entre módulos do 02-Arquitetura (seção 3).
 - **Siglas:** toda sigla aparece com o significado entre parênteses; o glossário completo está na seção 11 do 01-PRD.
 - **Próximo documento:** 04-Contratos de API.
