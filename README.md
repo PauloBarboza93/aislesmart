@@ -62,9 +62,9 @@ aislesmart/
 | [01-PRD](docs/01-PRD.md) | O que o produto faz e por quê: objetivos, escopo, histórias de usuário, métricas | ✅ Rascunho v0.2 |
 | [02-Arquitetura](docs/02-Arquitetura.md) | Como o sistema é montado: componentes, módulos, fluxos e decisões | ✅ Rascunho v0.2 |
 | [03-Modelo de dados](docs/03-Modelo-de-dados.md) | Tabelas, relacionamentos, vetores do RAG e dados de exemplo | ✅ Rascunho v0.1 |
-| [04-Contratos de API](docs/04-Contratos-de-API.md) | Endpoints da loja e do chat, formato de erros e eventos do streaming | ✅ Rascunho v0.1 |
-| 05-Ferramentas MCP | Ferramentas que o assistente pode usar | ⏳ Próximo |
-| 06-Agentes | Papel e instruções de cada agente | ⏳ |
+| [04-Contratos de API](docs/04-Contratos-de-API.md) | Endpoints da loja e do chat, formato de erros e eventos do streaming | ✅ Rascunho v0.2 |
+| [05-Ferramentas MCP](docs/05-Ferramentas-MCP.md) | Ferramentas que o assistente pode usar: entrada, saída, erros e servidor MCP | ✅ Rascunho v0.2 |
+| 06-Agentes | Papel e instruções de cada agente | ⏳ Próximo |
 | 07-Machine Learning | Dados, treino, avaliação e publicação (Parte B) | ⏳ |
 
 ## Roteiro
@@ -72,7 +72,8 @@ aislesmart/
 - [x] Documentação inicial (PRD e arquitetura)
 - [x] Modelo de dados (03)
 - [x] Contratos de API (04)
-- [ ] Documentos 05 a 07
+- [x] Ferramentas MCP (05)
+- [ ] Documentos 06 e 07
 - [ ] Loja básica (catálogo, carrinho e pedido simulado)
 - [ ] Assistente com LLM local e respostas em streaming
 - [ ] RAG com pgvector

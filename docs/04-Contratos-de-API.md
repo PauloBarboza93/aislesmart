@@ -6,7 +6,7 @@ Nov 15, 2026 · Paulo Oliveira
 
 Este documento define **como o front-end e o back-end conversam**: cada endereço (endpoint), o que ele recebe, o que devolve e quais erros pode dar. O 01-PRD diz o que construir, o 02-Arquitetura diz como montar, o 03-Modelo de dados diz o que fica guardado, e este documento diz o que passa pela rede.
 
-- **Status:** rascunho v0.1, em revisão por Paulo Oliveira.
+- **Status:** rascunho v0.2 (16/11/2026): seção 7.2 conferida com o 05-Ferramentas MCP.
 - **Base:** histórias de usuário do 01-PRD (HU-01 a HU-09), seções 4 e 5 do 02-Arquitetura e tabelas do 03-Modelo de dados.
 - **Siglas:** toda sigla aparece com o significado entre parênteses; o glossário completo está na seção 11 do 01-PRD.
 - **Próximo documento:** 05-Ferramentas MCP.
@@ -482,6 +482,9 @@ Regras:
 - **`fim` ou `erro` é sempre o último evento**, e só um dos dois aparece. A ordem dos outros não é garantida; o front-end monta a mensagem pelo tipo: junta os `texto`, mostra os cards dos `produtos`, o cartão com botão Confirmar da `proposta` e as fontes embaixo.
 - O texto vai dentro de um JSON (`{"conteudo": ...}`), e não solto, porque quebras de linha no texto do LLM quebrariam as linhas `data:` do SSE.
 - Os dados de `produtos` e `proposta` vêm das ferramentas, que leem preço e estoque do banco na hora (regra da seção 7 do PRD e D15). O LLM nunca escreve esses números por conta própria.
+- Os dados de `produtos`, `proposta` e `fonte` têm exatamente o formato devolvido pelas ferramentas `buscarProdutos`, `proporItemCarrinho` e `buscarPoliticas` (05-Ferramentas MCP, seção 9). O `texto` dos trechos de política vai só para o LLM; o evento `fonte` leva só `documento` e `secao`.
+- O evento `produtos` traz **todos** os produtos que a busca devolveu (até 5), mesmo que o texto comente só alguns (05, F14).
+- Há no máximo **um** evento `produtos` por resposta. Se o agente buscar mais de uma vez, vai só o resultado da última busca (05, F15).
 - `intencao` no `fim` registra qual agente respondeu: `PRODUTOS`, `POLITICAS`, `PEDIDOS` ou `FORA_DO_TEMA`. Serve para os logs e para conferir as 20 perguntas de teste. A lista final fica no 06-Agentes.
 - Códigos de `erro` do chat: `ASSISTENTE_INDISPONIVEL` (Ollama desligado ou sem resposta) e `ERRO_INTERNO`. Outros podem surgir no 06-Agentes.
 
@@ -626,7 +629,7 @@ Cada pergunta tem um momento certo para ser respondida. Ao chegar nele, a respos
 
 | Pergunta | Quando responder | Onde a resposta entra |
 | --- | --- | --- |
-| [ ] Os eventos `produtos`, `proposta` e `fonte` batem com o que as ferramentas devolvem ao `AssistenteService`? | No 05-Ferramentas MCP | Seção 7.2 |
+| [x] Os eventos `produtos`, `proposta` e `fonte` batem com o que as ferramentas devolvem ao `AssistenteService`? **Sim, conferido em 16/11/2026** (05, seção 9), com duas regras novas: todos os cards (F14) e só a última busca (F15) | No 05-Ferramentas MCP | Seção 7.2 |
 | [ ] Lista final de intenções (`intencao`) e de códigos de erro do chat | No 06-Agentes | Seção 7.2 |
 | [ ] A busca deve ignorar acentos ("cafe" encontrar "café")? Exige a extensão `unaccent` do PostgreSQL ou uma coluna normalizada | Início da fase 4, antes do primeiro script do banco, junto com "SQL ou Flyway" (03, seção 8) | Seção 4.2 |
 | [ ] Nome exato da propriedade de tempo limite assíncrono no Spring Boot 4 | Fase 5, ao criar o `ChatController` (conferir na documentação oficial) | Seção 7.4 |
