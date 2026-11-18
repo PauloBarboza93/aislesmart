@@ -6,7 +6,7 @@ Nov 15, 2026 · Paulo Oliveira
 
 Este documento define **como o front-end e o back-end conversam**: cada endereço (endpoint), o que ele recebe, o que devolve e quais erros pode dar. O 01-PRD diz o que construir, o 02-Arquitetura diz como montar, o 03-Modelo de dados diz o que fica guardado, e este documento diz o que passa pela rede.
 
-- **Status:** rascunho v0.2 (16/11/2026): seção 7.2 conferida com o 05-Ferramentas MCP.
+- **Status:** rascunho v0.3 (17/11/2026): lista final de intenções e de códigos de erro do chat definida no 06-Agentes (seção 7.2).
 - **Base:** histórias de usuário do 01-PRD (HU-01 a HU-09), seções 4 e 5 do 02-Arquitetura e tabelas do 03-Modelo de dados.
 - **Siglas:** toda sigla aparece com o significado entre parênteses; o glossário completo está na seção 11 do 01-PRD.
 - **Próximo documento:** 05-Ferramentas MCP.
@@ -485,8 +485,25 @@ Regras:
 - Os dados de `produtos`, `proposta` e `fonte` têm exatamente o formato devolvido pelas ferramentas `buscarProdutos`, `proporItemCarrinho` e `buscarPoliticas` (05-Ferramentas MCP, seção 9). O `texto` dos trechos de política vai só para o LLM; o evento `fonte` leva só `documento` e `secao`.
 - O evento `produtos` traz **todos** os produtos que a busca devolveu (até 5), mesmo que o texto comente só alguns (05, F14).
 - Há no máximo **um** evento `produtos` por resposta. Se o agente buscar mais de uma vez, vai só o resultado da última busca (05, F15).
-- `intencao` no `fim` registra qual agente respondeu: `PRODUTOS`, `POLITICAS`, `PEDIDOS` ou `FORA_DO_TEMA`. Serve para os logs e para conferir as 20 perguntas de teste. A lista final fica no 06-Agentes.
-- Códigos de `erro` do chat: `ASSISTENTE_INDISPONIVEL` (Ollama desligado ou sem resposta) e `ERRO_INTERNO`. Outros podem surgir no 06-Agentes.
+- `intencao` no `fim` registra qual agente respondeu. Serve para os logs e para conferir as 20 perguntas de teste. Lista final (06-Agentes, A01):
+
+| `intencao` | Quem responde |
+| --- | --- |
+| `PRODUTOS` | Agente de produtos |
+| `POLITICAS` | Agente de políticas |
+| `PEDIDOS` | Agente de pedidos |
+| `FORA_DO_TEMA` | Resposta pronta e neutra, sem LLM (saudações e assuntos fora da loja). Chega como um único evento `texto`, seguido do `fim` |
+
+- Códigos de `erro` do chat (06-Agentes, A02). Os erros das ferramentas (ex.: `ESTOQUE_INSUFICIENTE`, `NADA_ENCONTRADO`) **não** viram evento `erro`: vão para o LLM, que explica ao cliente, e a resposta termina com `fim`.
+
+| `codigo` | Quando | `mensagem` |
+| --- | --- | --- |
+| `ASSISTENTE_INDISPONIVEL` | O Ollama está desligado ou recusa a conexão | "O assistente está fora do ar. Tente de novo em instantes." |
+| `TEMPO_ESGOTADO` | O Ollama não termina a resposta dentro do tempo limite (seção 7.4) | "O assistente demorou demais para responder. Tente de novo ou faça uma pergunta mais curta." |
+| `ERRO_INTERNO` | Qualquer outra falha inesperada no back-end | "Algo deu errado. Tente de novo em instantes." |
+
+- Se o `erro` chegar no meio da resposta, a tela mantém o texto que já chegou e mostra a mensagem de erro embaixo.
+- O botão Enviar do chat fica desativado enquanto a resposta não termina (`fim` ou `erro`).
 
 **Exemplo do que passa pela rede** (HU-06):
 
@@ -545,7 +562,7 @@ export async function enviarMensagem(conversaId, mensagem, aoReceberEvento) {
 - O `ChatController` devolve um `Flux<ServerSentEvent<...>>` com `produces = MediaType.TEXT_EVENT_STREAM_VALUE`. O Spring MVC aceita tipos reativos como o `Flux` e os transmite aos poucos quando o tipo pedido é `text/event-stream` ([documentação do Spring](https://docs.spring.io/spring-framework/reference/6.2-SNAPSHOT/web/webmvc/mvc-controller/ann-methods/return-types.html)). Não é preciso trocar para o Spring WebFlux.
 - O texto vem do `ChatClient` do Spring AI com `.stream()`, que devolve um `Flux` de pedaços ([Baeldung](https://www.baeldung.com/spring-ai-chatclient-stream-response)). O `AssistenteService` converte cada pedaço num evento `texto` e junta os eventos das ferramentas (`produtos`, `proposta`, `fonte`) antes do `fim`.
 - Um erro no `Flux` (ex.: Ollama desligado) vira o evento `erro`, em vez de derrubar a conexão sem aviso.
-- O Ollama local pode demorar; o tempo limite de requisições assíncronas do Spring MVC deve ser ajustado (ex.: 120 segundos). O nome exato da propriedade no Spring Boot 4 será conferido na fase 5.
+- O Ollama local pode demorar; o tempo limite de requisições assíncronas do Spring MVC deve ser ajustado (ex.: 120 segundos). Passado esse tempo, a resposta termina com `erro` `TEMPO_ESGOTADO`. O nome exato da propriedade no Spring Boot 4 será conferido na fase 5.
 
 ```java
 @PostMapping(path = "/api/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -630,7 +647,7 @@ Cada pergunta tem um momento certo para ser respondida. Ao chegar nele, a respos
 | Pergunta | Quando responder | Onde a resposta entra |
 | --- | --- | --- |
 | [x] Os eventos `produtos`, `proposta` e `fonte` batem com o que as ferramentas devolvem ao `AssistenteService`? **Sim, conferido em 16/11/2026** (05, seção 9), com duas regras novas: todos os cards (F14) e só a última busca (F15) | No 05-Ferramentas MCP | Seção 7.2 |
-| [ ] Lista final de intenções (`intencao`) e de códigos de erro do chat | No 06-Agentes | Seção 7.2 |
+| [x] Lista final de intenções (`intencao`) e de códigos de erro do chat. **Definida em 17/11/2026** (06-Agentes, A01 e A02): 4 intenções e 3 códigos de erro, com o novo `TEMPO_ESGOTADO` | No 06-Agentes | Seção 7.2 |
 | [ ] A busca deve ignorar acentos ("cafe" encontrar "café")? Exige a extensão `unaccent` do PostgreSQL ou uma coluna normalizada | Início da fase 4, antes do primeiro script do banco, junto com "SQL ou Flyway" (03, seção 8) | Seção 4.2 |
 | [ ] Nome exato da propriedade de tempo limite assíncrono no Spring Boot 4 | Fase 5, ao criar o `ChatController` (conferir na documentação oficial) | Seção 7.4 |
 
