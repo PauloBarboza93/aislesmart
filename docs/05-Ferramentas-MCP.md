@@ -6,7 +6,7 @@ Nov 16, 2026 · Paulo Oliveira
 
 Este documento define **as ferramentas que o assistente pode usar**: o nome de cada uma, o que ela recebe, o que devolve, quais erros pode dar e qual agente pode chamá-la. O 01-PRD diz o que construir, o 02-Arquitetura diz como montar, o 03-Modelo de dados diz o que fica guardado, o 04-Contratos de API diz o que passa pela rede, e este documento diz o que a IA consegue pedir para o sistema fazer.
 
-- **Status:** rascunho v0.2, revisado e aprovado por Paulo Oliveira em 16/11/2026.
+- **Status:** rascunho v0.3 (17/11/2026): descrição da `consultarProduto` ajustada no 06-Agentes (A07).
 - **Base:** HU-05 a HU-09 do 01-PRD, seções 3, 5 e 8 do 02-Arquitetura (ADRs 04 e 12), D13 e D15 do 03-Modelo de dados e seção 7 do 04-Contratos de API.
 - **Siglas:** toda sigla aparece com o significado entre parênteses; o glossário completo está na seção 11 do 01-PRD.
 - **Próximo documento:** 06-Agentes.
@@ -19,6 +19,7 @@ Este documento define **as ferramentas que o assistente pode usar**: o nome de c
 | --- | --- | --- |
 | v0.1 | 16/11/2026 | Primeira versão, com 7 ferramentas e decisões propostas |
 | v0.2 | 16/11/2026 | Revisão: aprovadas F03 (com plano B), F07, F11, `NADA_ENCONTRADO` e `verCarrinho`; novas decisões F14 a F16; respondida a pergunta em aberto do 04 (seção 9) |
+| v0.3 | 17/11/2026 | Descrição da T2 `consultarProduto`: retirado "antes de propor colocá-lo no carrinho", porque a `proporItemCarrinho` já confere preço e estoque (06-Agentes, A07) |
 
 ## 1. Visão geral
 
@@ -207,7 +208,9 @@ Cada item é um `ProdutoResumoDTO`, o mesmo da listagem (04, seção 4.2).
 
 ### 4.2 T2 `consultarProduto`
 
-**Descrição para o LLM:** "Mostra os dados atuais de um produto: preço, estoque, ingredientes, alergênicos, lactose e glúten. Use quando o cliente perguntar sobre um produto já mostrado ou antes de propor colocá-lo no carrinho."
+**Descrição para o LLM:** "Mostra os dados atuais de um produto: preço, estoque, ingredientes, alergênicos, lactose e glúten. Use quando o cliente perguntar sobre um produto já mostrado."
+
+> Ajustada em 17/11/2026 (v0.3): não é preciso chamar esta ferramenta antes de `proporItemCarrinho`, que já confere preço e estoque sozinha. Chamar as duas só aumentaria a espera (06-Agentes, A07).
 
 **Entrada**
 
