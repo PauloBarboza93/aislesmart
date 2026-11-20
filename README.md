@@ -63,8 +63,8 @@ aislesmart/
 | [02-Arquitetura](docs/02-Arquitetura.md) | Como o sistema é montado: componentes, módulos, fluxos e decisões | ✅ Rascunho v0.2 |
 | [03-Modelo de dados](docs/03-Modelo-de-dados.md) | Tabelas, relacionamentos, vetores do RAG e dados de exemplo | ✅ Rascunho v0.1 |
 | [04-Contratos de API](docs/04-Contratos-de-API.md) | Endpoints da loja e do chat, formato de erros e eventos do streaming | ✅ Rascunho v0.3 |
-| [05-Ferramentas MCP](docs/05-Ferramentas-MCP.md) | Ferramentas que o assistente pode usar: entrada, saída, erros e servidor MCP | ✅ Rascunho v0.3 |
-| [06-Agentes](docs/06-Agentes.md) | Roteador, papel e instruções de cada agente, segurança e perguntas de teste | 🟡 Em andamento (v0.1) |
+| [05-Ferramentas MCP](docs/05-Ferramentas-MCP.md) | Ferramentas que o assistente pode usar: entrada, saída, erros e servidor MCP | ✅ Rascunho v0.4 |
+| [06-Agentes](docs/06-Agentes.md) | Roteador, papel e instruções de cada agente, segurança e perguntas de teste | ✅ v1.0 |
 | 07-Machine Learning | Dados, treino, avaliação e publicação (Parte B) | ⏳ |
 
 ## Roteiro
@@ -73,7 +73,8 @@ aislesmart/
 - [x] Modelo de dados (03)
 - [x] Contratos de API (04)
 - [x] Ferramentas MCP (05)
-- [ ] Documentos 06 e 07
+- [x] Agentes (06)
+- [ ] Machine Learning (07)
 - [ ] Loja básica (catálogo, carrinho e pedido simulado)
 - [ ] Assistente com LLM local e respostas em streaming
 - [ ] RAG com pgvector
