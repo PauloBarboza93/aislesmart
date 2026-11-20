@@ -6,7 +6,7 @@ Nov 16, 2026 · Paulo Oliveira
 
 Este documento define **as ferramentas que o assistente pode usar**: o nome de cada uma, o que ela recebe, o que devolve, quais erros pode dar e qual agente pode chamá-la. O 01-PRD diz o que construir, o 02-Arquitetura diz como montar, o 03-Modelo de dados diz o que fica guardado, o 04-Contratos de API diz o que passa pela rede, e este documento diz o que a IA consegue pedir para o sistema fazer.
 
-- **Status:** rascunho v0.3 (17/11/2026): descrição da `consultarProduto` ajustada no 06-Agentes (A07).
+- **Status:** rascunho v0.4 (19/11/2026): nota da seção 4.2 corrigida; o id de "o primeiro" vem da lista de últimos produtos mostrados (06-Agentes, A09).
 - **Base:** HU-05 a HU-09 do 01-PRD, seções 3, 5 e 8 do 02-Arquitetura (ADRs 04 e 12), D13 e D15 do 03-Modelo de dados e seção 7 do 04-Contratos de API.
 - **Siglas:** toda sigla aparece com o significado entre parênteses; o glossário completo está na seção 11 do 01-PRD.
 - **Próximo documento:** 06-Agentes.
@@ -20,6 +20,7 @@ Este documento define **as ferramentas que o assistente pode usar**: o nome de c
 | v0.1 | 16/11/2026 | Primeira versão, com 7 ferramentas e decisões propostas |
 | v0.2 | 16/11/2026 | Revisão: aprovadas F03 (com plano B), F07, F11, `NADA_ENCONTRADO` e `verCarrinho`; novas decisões F14 a F16; respondida a pergunta em aberto do 04 (seção 9) |
 | v0.3 | 17/11/2026 | Descrição da T2 `consultarProduto`: retirado "antes de propor colocá-lo no carrinho", porque a `proporItemCarrinho` já confere preço e estoque (06-Agentes, A07) |
+| v0.4 | 19/11/2026 | Correção da nota da seção 4.2: a memória do Spring AI não guarda resultados de ferramentas; o id vem da lista de últimos produtos mostrados (06-Agentes, A09) |
 
 ## 1. Visão geral
 
@@ -224,7 +225,9 @@ Cada item é um `ProdutoResumoDTO`, o mesmo da listagem (04, seção 4.2).
 
 **Erros:** `VALIDACAO`, `PRODUTO_NAO_ENCONTRADO`.
 
-> **Para iniciante:** quando o cliente diz "coloca o **segundo** no carrinho", o LLM descobre o id olhando a memória da conversa, onde está o resultado da última `buscarProdutos`. Por isso a busca devolve o `id` de cada produto.
+> **Para iniciante:** quando o cliente diz "coloca o **segundo** no carrinho", o LLM precisa do id do produto. A memória do Spring AI **não** guarda os resultados das ferramentas, só o texto da conversa. Por isso o código guarda a lista do último evento `produtos` (na ordem dos cards, com os ids) e a acrescenta à instrução do agente (06-Agentes, seção 5.3, A09). É por isso que a busca devolve o `id` de cada produto.
+>
+> *Corrigido em 19/11/2026 (v0.4): a versão anterior dizia que o id ficava na memória da conversa.*
 
 ## 5. Ferramenta do agente de políticas
 
@@ -414,6 +417,7 @@ Dois pontos decididos em 16/11/2026 e registrados também no 04 (seção 7.2, v0
 ## Fontes
 
 - [Spring AI: Retrieval Augmented Generation e `QuestionAnswerAdvisor` (documentação oficial)](https://docs.spring.io/spring-ai/reference/api/retrieval-augmented-generation.html)
+- [Spring AI: Chat Memory, mensagens de ferramentas não são guardadas (documentação oficial)](https://docs.spring.io/spring-ai/reference/api/chat-memory.html)
 - [MCP Inspector: README do repositório oficial](https://cdn.jsdelivr.net/gh/modelcontextprotocol/inspector@main/README.md)
 - [Spring AI: Tool Calling, `@Tool`, `@ToolParam`, `ToolContext` e `returnDirect` (tradução da documentação oficial, springdoc.cn)](https://springdoc.cn/spring-ai/api/tools.html)
 - [Spring AI: referência de Tool Calling (java2ai.com)](https://java2ai.com/ecosystem/spring-ai/reference/tool-calling)
