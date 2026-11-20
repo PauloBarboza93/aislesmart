@@ -8,7 +8,7 @@ Este PRD define **o que** o AisleSmart vai fazer e **por quê**, antes de qualqu
 
 Num projeto em que a IA escreve o código, o PRD é o seu principal instrumento de controle. A IA de código vai ler este documento e gerar o que está escrito aqui. Se algo estiver vago, ela vai inventar.
 
-- **Status:** rascunho v0.2, em revisão por Paulo Oliveira.
+- **Status:** rascunho v0.3, em revisão por Paulo Oliveira. v0.3 (20/11/2026): a tarefa do modelo ajustado passou a ser classificar a intenção da mensagem (07-Machine Learning, M01).
 - **Nome do projeto:** AisleSmart ("aisle" é o corredor do supermercado e "smart" é inteligente: um "corredor inteligente").
 - **Documentos seguintes:** 02-Arquitetura, 03-Modelo de dados, 04-Contratos de API, 05-Ferramentas MCP, 06-Agentes, 07-Machine Learning.
 - **Siglas:** toda sigla aparece com o significado entre parênteses na primeira vez, e o glossário completo está na seção 11.
@@ -82,8 +82,8 @@ O MVP é a menor versão que já mostra os quatro conceitos de IA funcionando ju
 **Dentro do MVP: Parte B (Machine Learning, em Python)**
 
 - Conjunto de dados com perguntas de clientes em português, criado para o projeto e publicado no Hugging Face
-- Modelo clássico com scikit-learn (biblioteca de ML em Python) que classifica a intenção da pergunta: produtos, políticas ou pedidos. Serve de base de comparação
-- Fine-tuning (ajuste fino) de um LLM pequeno, de cerca de 4B (4 bilhões) de parâmetros, com a técnica QLoRA (Quantized Low-Rank Adaptation: treina só uma pequena parte do modelo, por isso cabe numa placa de vídeo de 8 GB). O modelo aprende a transformar a pergunta em filtros de busca
+- Modelo clássico com scikit-learn (biblioteca de ML em Python) que classifica a intenção da pergunta: produtos, políticas, pedidos ou fora do tema. Serve de base de comparação
+- Fine-tuning (ajuste fino) de um LLM pequeno, de cerca de 4B (4 bilhões) de parâmetros, com a técnica QLoRA (Quantized Low-Rank Adaptation: treina só uma pequena parte do modelo, por isso cabe numa placa de vídeo de 8 GB). O modelo aprende a classificar a intenção da mensagem, a mesma tarefa do classificador clássico, para a comparação ser justa (07-Machine Learning, M01)
 - Modelo ajustado publicado no Hugging Face e usado pelo assistente da Parte A, rodando no Ollama
 - Projeto de pesquisa comparando os modelos com métricas (taxa de acerto e tempo de resposta)
 - Artigo técnico com os resultados da pesquisa
@@ -160,15 +160,16 @@ São 10 histórias, agrupadas em loja básica (sem IA), assistente de IA e model
 
 ### Modelo treinado (Parte B)
 
-**HU-10 — Entender filtros na pergunta.** Como cliente, quero escrever do meu jeito ("algo sem lactose para o café da manhã até R$30"), para que o assistente entenda o que procuro sem eu usar filtros.
+**HU-10 — Entender o assunto da mensagem.** Como cliente, quero escrever do meu jeito ("vocês trocam se vier amassado?"), para que o assistente entenda do que estou falando e me encaminhe ao especialista certo.
 
-- [ ] O modelo ajustado transforma a pergunta em filtros estruturados em JSON (formato de dados em texto), por exemplo: categoria, preço máximo e restrições
-- [ ] O modelo acerta os filtros em pelo menos 85% das perguntas do conjunto de teste (meta inicial, a revisar após os primeiros testes)
+- [ ] O modelo ajustado classifica a mensagem em uma das 4 intenções do roteador: produtos, políticas, pedidos ou fora do tema (06-Agentes, A01)
+- [ ] O modelo acerta a intenção em pelo menos 85% das perguntas do conjunto de teste (meta inicial, a revisar após os primeiros testes)
+- [ ] A comparação com o classificador clássico e com o modelo sem ajuste está registrada (07-Machine Learning)
 - [ ] O modelo está publicado no Hugging Face, com documentação (model card)
 
 ## 6. O assistente de IA
 
-O assistente combina cinco peças: um **LLM** (Large Language Model, modelo de linguagem grande) que entende e escreve, **RAG** (Retrieval-Augmented Generation, geração aumentada por recuperação) para responder com dados da loja, **MCP** (Model Context Protocol, protocolo de contexto de modelo) para executar ações, **agentes** que dividem o trabalho e o **modelo ajustado** da Parte B, que entende os filtros da pergunta.
+O assistente combina cinco peças: um **LLM** (Large Language Model, modelo de linguagem grande) que entende e escreve, **RAG** (Retrieval-Augmented Generation, geração aumentada por recuperação) para responder com dados da loja, **MCP** (Model Context Protocol, protocolo de contexto de modelo) para executar ações, **agentes** que dividem o trabalho e o **modelo ajustado** da Parte B, que identifica a intenção da pergunta para o roteador.
 
 | Conceito | Explicação simples | Uso no AisleSmart |
 | --- | --- | --- |
@@ -178,7 +179,7 @@ O assistente combina cinco peças: um **LLM** (Large Language Model, modelo de l
 | Tools (ferramentas) | Funções do sistema que o LLM pode pedir para executar. Quem executa é o código, não o LLM. | Verificar estoque, adicionar ao carrinho, consultar pedido |
 | MCP (Model Context Protocol, protocolo de contexto de modelo) | Um padrão aberto para expor ferramentas e dados a qualquer aplicação de IA, como uma "tomada universal". | As ferramentas da loja ficam num servidor MCP próprio |
 | Agente | Um LLM com um papel, instruções e um conjunto de ferramentas, que decide os passos para cumprir uma tarefa. | Roteador + agentes de produtos, políticas e pedidos |
-| Modelo ajustado (fine-tuning) | Um LLM pequeno treinado com exemplos da loja para fazer uma tarefa específica muito bem. | Transforma a pergunta em filtros de busca: categoria, preço máximo e restrições (Parte B) |
+| Modelo ajustado (fine-tuning) | Um LLM pequeno treinado com exemplos da loja para fazer uma tarefa específica muito bem. | Classifica a intenção da pergunta para o roteador: produtos, políticas, pedidos ou fora do tema (Parte B) |
 
 ```mermaid
 flowchart TD
@@ -197,7 +198,7 @@ O roteador lê a pergunta e encaminha para um único agente; só o agente de ped
 **Exemplo de conversa (HU-06 + HU-08)**
 
 1. Ana: "Quero um café em grãos de torra média, até R$40."
-2. O modelo ajustado transforma a pergunta em filtros (categoria: café; tipo: grãos; torra: média; preço máximo: R$40), e o roteador chama o agente de produtos.
+2. O roteador identifica a intenção (produtos) e chama o agente de produtos, que transforma a pergunta em filtros (tipo: grãos; torra: média; preço máximo: R$40).
 3. O agente busca no banco vetorial, aplica os filtros e mostra 3 cards.
 4. Ana: "Coloca o segundo no carrinho."
 5. O roteador chama o agente de pedidos, que verifica o estoque pela ferramenta de estoque.

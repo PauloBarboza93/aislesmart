@@ -6,7 +6,7 @@ Nov 12, 2026
 
 Este documento descreve **como** o AisleSmart é organizado por dentro: quais partes existem, como elas conversam e onde cada uma roda. O 01-PRD diz **o que** construir; este diz como montar.
 
-- **Status:** rascunho v0.2, em revisão por Paulo Oliveira.
+- **Status:** rascunho v0.3, em revisão por Paulo Oliveira. v0.3 (20/11/2026): o modelo ajustado classifica a intenção para o roteador, em vez de extrair filtros (07-Machine Learning, M01).
 - **Base:** decisões tomadas na seção 8 do 01-PRD.
 - **Siglas:** toda sigla aparece com o significado entre parênteses; o glossário completo está na seção 11 do 01-PRD.
 - **Próximo documento:** 03-Modelo de dados.
@@ -99,7 +99,6 @@ backend/
     assistente/
       ChatController.java
       AssistenteService.java
-      filtros/                  extração de filtros com o modelo ajustado (Parte B)
       rag/                      ingestão e busca nos documentos
       agentes/                  roteador, produtos, políticas, pedidos
       ferramentas/              estoque, carrinho, pedido (@Tool)
@@ -143,7 +142,7 @@ Toda pergunta do chat segue o mesmo caminho, e nenhuma alteração no carrinho a
 
 1. O `WidgetChat` envia a mensagem e o identificador da conversa para `POST /api/chat`.
 2. O `ChatController` repassa para o `AssistenteService`, que recupera o histórico da conversa (memória).
-3. O **agente roteador** pede ao LLM (Large Language Model, modelo de linguagem grande) para classificar a intenção: produtos, políticas ou pedidos. Na fase da Parte B, o modelo ajustado também extrai os filtros da pergunta (categoria, preço máximo, restrições).
+3. O **agente roteador** pede ao LLM (Large Language Model, modelo de linguagem grande) para classificar a intenção: produtos, políticas ou pedidos. Na fase da Parte B, essa classificação pode passar a ser feita pelo modelo ajustado (07-Machine Learning, M01).
 4. O agente escolhido trabalha:
    - **produtos:** busca trechos no banco vetorial (RAG, Retrieval-Augmented Generation: busca nos dados antes de responder), aplica os filtros e confere preço e estoque por ferramenta;
    - **políticas:** busca trechos dos documentos de política (RAG) e cita a fonte;
@@ -228,14 +227,14 @@ ml/
 
 **Etapas**
 
-1. **Dados:** perguntas de clientes em português, cada uma com a resposta esperada (intenção e filtros em JSON, JavaScript Object Notation, um formato de dados em texto). Parte escrita à mão e parte gerada com ajuda de um LLM, sempre revisada.
+1. **Dados:** perguntas de clientes em português, cada uma com a intenção esperada (produtos, políticas, pedidos ou fora do tema). Parte escrita à mão e parte gerada com ajuda de um LLM, sempre revisada.
 2. **Baseline (modelo de referência):** classificador de intenção com scikit-learn. Serve de base de comparação.
-3. **Fine-tuning (ajuste fino):** modelo base de cerca de 4B parâmetros, ajustado com QLoRA (Quantized Low-Rank Adaptation) no Unsloth, na RTX 4060.
-4. **Avaliação (pesquisa):** comparar baseline × modelo ajustado × `qwen3:8b` sem ajuste, em taxa de acerto e tempo de resposta.
+3. **Fine-tuning (ajuste fino):** modelo base de cerca de 4B parâmetros, ajustado com QLoRA (Quantized Low-Rank Adaptation) no Unsloth, na RTX 4060, para a mesma tarefa: classificar a intenção.
+4. **Avaliação (pesquisa):** comparar baseline × modelo ajustado × modelo sem ajuste (incluindo o `qwen3:8b`), em taxa de acerto e tempo de resposta.
 5. **Publicação:** conjunto de dados e modelo (no formato GGUF, usado pelo Ollama) no Hugging Face, com model card (página de documentação).
-6. **Integração:** o Ollama roda o modelo direto do Hugging Face com `ollama run hf.co/<usuario>/<modelo>` ([documentação do Hugging Face](https://huggingface.co/docs/hub/ollama)), e o módulo `assistente/filtros` passa a usá-lo.
+6. **Integração:** o Ollama roda o modelo direto do Hugging Face com `ollama run hf.co/<usuario>/<modelo>` ([documentação do Hugging Face](https://huggingface.co/docs/hub/ollama)), e o roteador (`assistente/agentes`) passa a usá-lo na classificação da intenção.
 
-O modelo base exato e o formato dos filtros serão definidos no documento 07-Machine Learning.
+A tarefa foi definida no 07-Machine Learning (M01); o modelo base exato também será definido lá.
 
 ## 9. Evolução por fases
 
@@ -248,7 +247,7 @@ A arquitetura cresce junto com o projeto: cada fase acrescenta uma peça e só c
 | 6. RAG | pgvector, ingestão de produtos e políticas | HU-06 e HU-07 passando |
 | 7. Ferramentas e MCP | Primeiro ferramentas locais (`@Tool`); depois as mesmas ferramentas expostas via MCP | HU-08 e HU-09 passando |
 | 8. Agentes | Roteador e os três agentes especializados | 18 de 20 perguntas de teste certas |
-| Parte B (pode correr em paralelo a partir da fase 5) | Pasta ml/, modelo ajustado publicado e rodando no Ollama, módulo assistente/filtros | HU-10 passando |
+| Parte B (pode correr em paralelo a partir da fase 5) | Pasta ml/, modelo ajustado publicado e rodando no Ollama, usado pelo roteador | HU-10 passando |
 
 **Sobre a fase 7:** no Spring AI 2.0, uma única aplicação Spring Boot pode ser ao mesmo tempo cliente e servidor MCP, e qualquer serviço vira ferramenta MCP com a anotação `@McpTool` ([artigo sobre o Spring AI 2.0](https://www.issoh.co.jp/tech/details/12778/), em japonês). Por isso, o servidor MCP ficará dentro do próprio back-end (ADR 12).
 

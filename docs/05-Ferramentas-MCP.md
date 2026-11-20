@@ -6,7 +6,7 @@ Nov 16, 2026 · Paulo Oliveira
 
 Este documento define **as ferramentas que o assistente pode usar**: o nome de cada uma, o que ela recebe, o que devolve, quais erros pode dar e qual agente pode chamá-la. O 01-PRD diz o que construir, o 02-Arquitetura diz como montar, o 03-Modelo de dados diz o que fica guardado, o 04-Contratos de API diz o que passa pela rede, e este documento diz o que a IA consegue pedir para o sistema fazer.
 
-- **Status:** rascunho v0.4 (19/11/2026): nota da seção 4.2 corrigida; o id de "o primeiro" vem da lista de últimos produtos mostrados (06-Agentes, A09).
+- **Status:** rascunho v0.5 (20/11/2026): a HU-10 não usa mais ferramentas; o modelo ajustado classifica a intenção (07-Machine Learning, M01).
 - **Base:** HU-05 a HU-09 do 01-PRD, seções 3, 5 e 8 do 02-Arquitetura (ADRs 04 e 12), D13 e D15 do 03-Modelo de dados e seção 7 do 04-Contratos de API.
 - **Siglas:** toda sigla aparece com o significado entre parênteses; o glossário completo está na seção 11 do 01-PRD.
 - **Próximo documento:** 06-Agentes.
@@ -21,6 +21,7 @@ Este documento define **as ferramentas que o assistente pode usar**: o nome de c
 | v0.2 | 16/11/2026 | Revisão: aprovadas F03 (com plano B), F07, F11, `NADA_ENCONTRADO` e `verCarrinho`; novas decisões F14 a F16; respondida a pergunta em aberto do 04 (seção 9) |
 | v0.3 | 17/11/2026 | Descrição da T2 `consultarProduto`: retirado "antes de propor colocá-lo no carrinho", porque a `proporItemCarrinho` já confere preço e estoque (06-Agentes, A07) |
 | v0.4 | 19/11/2026 | Correção da nota da seção 4.2: a memória do Spring AI não guarda resultados de ferramentas; o id vem da lista de últimos produtos mostrados (06-Agentes, A09) |
+| v0.5 | 20/11/2026 | A HU-10 saiu da T1 e da seção 8: o modelo ajustado da Parte B classifica a intenção no roteador e não preenche filtros (07-Machine Learning, M01) |
 
 ## 1. Visão geral
 
@@ -28,7 +29,7 @@ São **7 ferramentas**, todas no pacote `br.com.aislesmart.assistente.ferramenta
 
 | Nº | Ferramenta | Para que serve | Agente | HU | Evento SSE que gera |
 | --- | --- | --- | --- | --- | --- |
-| T1 | `buscarProdutos` | Encontra produtos pelo significado da pergunta, com filtros | produtos | HU-06, HU-10 | `produtos` |
+| T1 | `buscarProdutos` | Encontra produtos pelo significado da pergunta, com filtros | produtos | HU-06 | `produtos` |
 | T2 | `consultarProduto` | Detalhe de um produto: preço, estoque, ingredientes, alergênicos | produtos, pedidos | HU-06, HU-08 | — |
 | T3 | `buscarPoliticas` | Encontra trechos das políticas da loja | políticas | HU-07 | `fonte` |
 | T4 | `verCarrinho` | Mostra o carrinho atual com o total | pedidos | HU-08 | — |
@@ -172,7 +173,7 @@ Toda ferramenta devolve um `record` Java, que o Spring AI converte em JSON para 
 | `atributos` | objeto | não | Pares chave-valor do JSONB (ex.: `{"torra": "média", "tipo": "grãos"}`); chaves em minúsculas e sem acento (03, seção 4.1) |
 | `somenteDisponiveis` | sim/não | não | Padrão `true` |
 
-Os filtros têm os mesmos nomes do JSON que o modelo ajustado da Parte B vai gerar (HU-10). Assim, na fase da Parte B, o roteador pode passar os filtros extraídos direto para esta ferramenta.
+Quem preenche os filtros é o agente de produtos, ao chamar esta ferramenta (06-Agentes, A05). *Até a v0.4, a ideia era o modelo ajustado da Parte B gerar esses filtros; desde a v0.5, ele classifica a intenção (07-Machine Learning, M01).*
 
 **O que acontece**
 
@@ -367,7 +368,7 @@ As 7 ferramentas também ficam disponíveis por MCP, para qualquer aplicação d
 | HU-07 Políticas | T3 | Usa só os documentos e cita a fonte (`documento` + `secao`) |
 | HU-08 Carrinho pelo chat | T2, T4, T5 | Confere o estoque antes; só propõe; o clique chama a API |
 | HU-09 Pedido pelo chat | T6, T7 | Só pedidos do próprio cliente; número inexistente não inventa status |
-| HU-10 Filtros (Parte B) | T1 | Os filtros do modelo ajustado têm os mesmos nomes dos parâmetros |
+| HU-10 Intenção (Parte B) | — | Nenhuma ferramenta: o modelo ajustado só classifica a intenção no roteador |
 
 ## 9. Pergunta em aberto do 04 — respondida
 

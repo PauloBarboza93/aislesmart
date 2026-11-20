@@ -6,7 +6,7 @@ Nov 15, 2026 · Paulo Oliveira
 
 Este documento define **como o front-end e o back-end conversam**: cada endereço (endpoint), o que ele recebe, o que devolve e quais erros pode dar. O 01-PRD diz o que construir, o 02-Arquitetura diz como montar, o 03-Modelo de dados diz o que fica guardado, e este documento diz o que passa pela rede.
 
-- **Status:** rascunho v0.3 (17/11/2026): lista final de intenções e de códigos de erro do chat definida no 06-Agentes (seção 7.2).
+- **Status:** rascunho v0.4 (20/11/2026): linha da HU-10 na seção 9 ajustada; o modelo ajustado classifica a intenção (07-Machine Learning, M01). v0.3 (17/11/2026): lista final de intenções e de códigos de erro do chat definida no 06-Agentes (seção 7.2).
 - **Base:** histórias de usuário do 01-PRD (HU-01 a HU-09), seções 4 e 5 do 02-Arquitetura e tabelas do 03-Modelo de dados.
 - **Siglas:** toda sigla aparece com o significado entre parênteses; o glossário completo está na seção 11 do 01-PRD.
 - **Próximo documento:** 05-Ferramentas MCP.
@@ -628,7 +628,7 @@ Esta tabela confere que toda história tem um caminho na API.
 | HU-07 Políticas | `POST /api/chat` (evento `fonte`) |
 | HU-08 Carrinho pelo chat | `POST /api/chat` (evento `proposta`) + `POST /api/carrinho/itens` |
 | HU-09 Pedido pelo chat | `POST /api/chat` (o agente usa as ferramentas de pedido); `GET /api/pedidos` na tela "Meus pedidos" |
-| HU-10 Filtros (Parte B) | Nenhum endpoint novo: o modelo ajustado roda dentro do `POST /api/chat` |
+| HU-10 Intenção (Parte B) | Nenhum endpoint novo: o modelo ajustado é usado pelo roteador dentro do `POST /api/chat` |
 
 ## 10. Fora do MVP
 
