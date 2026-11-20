@@ -1,6 +1,6 @@
 # 07-Machine Learning
 
-> **Status:** rascunho v0.1 (19/11/2026): só a estrutura e o que já foi decidido no PRD. As seções 3 a 9 serão preenchidas uma por vez, começando pela M01 (seção 3).
+> **Status:** rascunho v0.2 (20/11/2026): M01 decidida (seção 3): o modelo classifica a intenção da mensagem. As seções 4 a 9 serão preenchidas uma por vez.
 > **Autor:** Paulo Oliveira
 > **Depende de:** 01-PRD (Parte B), 05-Ferramentas MCP (filtros da `buscarProdutos`) e 06-Agentes (intenções e as 20 perguntas de teste).
 
@@ -32,30 +32,50 @@ Definir a **Parte B** do AisleSmart: o trabalho de ML (Machine Learning, aprendi
 
 ## 3. A tarefa do modelo
 
-*Primeira decisão a tomar (M01). Em aberto.*
+*Decidido em 20/11/2026 (M01).*
 
-O PRD diz duas coisas que precisam ser conciliadas:
+**Tarefa:** classificar a intenção da mensagem do cliente em uma das 4 intenções do roteador (06, A01). É a mesma tarefa que o roteador já faz com o `qwen3:8b`.
 
-- o fine-tuning ensina o modelo a **transformar a pergunta em filtros JSON** (ex.: "café em grãos até R$40" → `{"busca": "café em grãos", "precoMaximo": 40}`);
-- o baseline é um **classificador** com scikit-learn.
+```
+"aceita troca?"          → POLITICAS
+"coloca 2 no carrinho"   → PEDIDOS
+"quero café até R$40"    → PRODUTOS
+"oi"                     → FORA_DO_TEMA
+```
 
-Um classificador escolhe uma resposta de uma lista fechada; ele não escreve um JSON com vários campos. Para a comparação ser justa, os três modelos precisam fazer **a mesma tarefa**. Opções a avaliar na próxima conversa:
+**Quem disputa** (detalhes na seção 7):
 
-| Opção | Tarefa | Baseline | Observação inicial |
-| --- | --- | --- | --- |
-| A | Classificar a intenção (`PRODUTOS`, `POLITICAS`, `PEDIDOS`, `FORA_DO_TEMA`) | Classificador de texto com scikit-learn | É exatamente o que o roteador faz (06, seção 3); medida simples (acertou ou não) |
-| B | Extrair os filtros em JSON | Regras simples (ex.: expressões regulares) ou um classificador por filtro | Mais próxima do PRD; avaliação e baseline mais trabalhosos |
-| C | As duas, em etapas | — | Mais completa; mais tempo e mais pontos para explicar |
+| Concorrente | O que é |
+| --- | --- |
+| Baseline | Classificador de texto do scikit-learn (ponto de partida: TF-IDF, *Term Frequency–Inverse Document Frequency*, que transforma o texto em números pelas palavras importantes, com regressão logística; confirmar na seção 5) |
+| Modelo ~4B sem ajuste | O mesmo modelo base, só com instrução, para medir o ganho do ajuste |
+| Modelo ~4B ajustado | O modelo base depois do fine-tuning com QLoRA |
+| `qwen3:8b` | O modelo que o roteador usa hoje (06) |
 
-*A escolha decide o formato do dataset, o baseline, as métricas e onde o modelo entra na Parte A.*
+**A pergunta da pesquisa:** *"Para rotear as mensagens de uma loja, um LLM pequeno ajustado vale a pena, ou um modelo clássico já resolve?"*
+
+**Por que esta opção:**
+
+- A comparação é justa: todos respondem a mesma coisa (uma das 4 palavras), e a medida é simples (acertou ou errou, e quanto tempo levou).
+- Mantém o scikit-learn, como o PRD previa, sem trocar tecnologia.
+- Encaixa no roteador sem mudar o código do 06: o método `interpretar` (A03) continua igual; muda só o nome do modelo no Ollama.
+- O dataset é simples (pergunta + intenção), e as 20 perguntas de teste do 06 (seção 8) servem de começo.
+
+**Por que não extrair filtros em JSON (opções descartadas):** o scikit-learn não gera JSON, então o baseline teria de ser feito com regras (outra tecnologia); e o agente de produtos já extrai os filtros quando chama a `buscarProdutos` (06, A05), então o modelo ajustado faria um trabalho repetido e exigiria uma etapa nova antes do agente. Fazer as duas tarefas somaria o trabalho das duas.
+
+**Resultado esperado, com honestidade:** em tarefas de classificação com poucas classes, modelos clássicos costumam ficar perto dos LLMs, e às vezes na frente, respondendo muito mais rápido. Qualquer resultado serve à pesquisa, porque a conclusão vem da medição, não de uma suposição.
+
+> **Para a entrevista:** *"Medi se um LLM ajustado vale a pena para rotear mensagens, comparando com um classificador clássico. A escolha final veio dos números: acerto e tempo de resposta."*
+
+**Documentos alinhados com a M01 (20/11/2026):** 01-PRD (HU-10 e seções 4 e 6), 02-Arquitetura (seções 3, 5, 8, 9 e 10), 04-Contratos de API (seção 9) e 05-Ferramentas MCP (seções 3, 4.1 e 8). Antes, eles diziam que o modelo ajustado extrairia filtros.
 
 ## 4. Dataset
 
-*A preencher depois da M01.* Já decidido no PRD: perguntas de clientes em **português**, cada uma com a **resposta esperada**. A definir: quantidade, como gerar e revisar as perguntas, divisão treino / validação / teste e licença de publicação.
+*A preencher.* Já decidido: perguntas de clientes em **português**, cada uma com a **intenção esperada** (M01). A definir: quantidade, como gerar e revisar as perguntas, equilíbrio entre as 4 intenções, divisão treino / validação / teste e licença de publicação.
 
 ## 5. Baseline
 
-*A preencher depois da M01.* Já decidido no PRD: **scikit-learn**.
+*A preencher.* Já decidido no PRD: classificador de intenção com **scikit-learn**. Ponto de partida a confirmar: TF-IDF com regressão logística.
 
 ## 6. Fine-tuning
 
@@ -71,24 +91,30 @@ Um classificador escolhe uma resposta de uma lista fechada; ele não escreve um 
 
 ## 9. Integração com a Parte A
 
-*A preencher.* Já decidido no PRD: o modelo ajustado roda no **Ollama** e é usado pela Parte A. Onde exatamente ele entra depende da M01.
+*A preencher.* Já decidido: o modelo ajustado roda no **Ollama** e entra no **roteador** (M01), no lugar do `qwen3:8b` só nessa chamada. Os três agentes continuam com o `qwen3:8b`.
 
 ## 10. Decisões
 
 | Id | Decisão |
 | --- | --- |
-| — | Nenhuma ainda neste documento |
+| M01 | O modelo da Parte B classifica a intenção da mensagem (`PRODUTOS`, `POLITICAS`, `PEDIDOS`, `FORA_DO_TEMA`); concorrentes: baseline scikit-learn, modelo ~4B sem ajuste, modelo ~4B ajustado e `qwen3:8b`; o modelo ajustado entra no roteador. Extrair filtros em JSON foi descartado (seção 3) |
 
 ## 11. Perguntas em aberto
 
 | Pergunta | Quando responder | Onde a resposta entra |
 | --- | --- | --- |
-| [ ] M01: qual é a tarefa do modelo (intenção, filtros JSON ou as duas)? | Próxima conversa do 07 | Seção 3 |
-| [ ] Modelo base de ~4B | Depois da M01 | Seção 6 |
-| [ ] Tamanho e forma de criar o dataset | Depois da M01 | Seção 4 |
+| [x] M01: qual é a tarefa do modelo? **Classificar a intenção** (20/11/2026) | — | Seção 3 |
+| [ ] Tamanho e forma de criar o dataset | Próxima conversa do 07 | Seção 4 |
+| [ ] O modelo recebe também a intenção anterior, como o roteador (06, A10), para entender "e o segundo?"? | Junto com o dataset | Seções 4 e 9 |
+| [ ] Modelo base de ~4B | Antes do fine-tuning | Seção 6 |
+| [ ] O `qwen3:8b` e o modelo ~4B cabem juntos nos 8 GB de VRAM, ou o Ollama vai alternar entre eles (mais espera)? | Seção 9, com teste prático | Seção 9 |
+| [ ] Se o scikit-learn vencer, o que vai para a loja? (Ele roda em Python, e a loja é Java) | Depois da avaliação | Seções 7 e 9 |
 
 ## Fontes
 
+- [Text Classification in the LLM Era: Where do we stand? (artigo, arXiv)](https://arxiv.org/pdf/2502.11830): regressão logística competitiva com LLMs ajustados em classificação
+- [Reconhecimento de intenção em e-commerce multilíngue com QLoRA (artigo, arXiv)](https://arxiv.org/pdf/2510.21970v1)
+- [Como treinar um modelo de decisão para classificar intenções com Unsloth e Qwen3.5-4B (Machine Learning Mastery)](https://machinelearningmastery.com/how-to-train-your-own-decision-model-like-jev-using-unsloth/)
 - 01-PRD do AisleSmart, Parte B (resumida em `resumo-1-prd-e-arquitetura.md`, seção 10)
 - [Hugging Face: usar o Ollama com modelos GGUF (documentação oficial)](https://huggingface.co/docs/hub/ollama)
 - [Fine-tuning com Unsloth em GPU de consumo (DEV Community)](https://dev.to/jovan_chan_9500711396d4e6/fine-tuning-llama3-unsloth-2026-4odd)
