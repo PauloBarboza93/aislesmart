@@ -1,6 +1,6 @@
 # 06-Agentes
 
-> **Status:** rascunho v0.1, em andamento (18/11/2026). Prontas: seção 3 (roteador e intenções), seção 4 (agentes de produtos, de políticas e de pedidos), seção 6 (erros do chat), seção 7 (segurança) e seção 8 (20 perguntas de teste). As outras seções ainda serão escritas.
+> **Status:** v1.0 (19/11/2026): todas as seções concluídas. Fica em aberto só o plano B da F03, que depende dos testes da fase 8 (seção 10).
 > **Autor:** Paulo Oliveira
 > **Depende de:** 01-PRD, 04-Contratos de API (seção 7, chat) e 05-Ferramentas MCP.
 
@@ -75,12 +75,13 @@ Regras do roteador para escolher a intenção (entram na instrução dele):
 
 1. **Assunto da loja vence saudação.** "oi, aceita troca?" → `POLITICAS`. `FORA_DO_TEMA` só quando a mensagem não fala de nada da loja.
 2. **Dois assuntos da loja: vale o primeiro citado.**
+3. **Continuação vale a intenção anterior** (A10). O roteador recebe a mensagem e a última intenção da conversa. Se a mensagem só continua o assunto anterior (ex.: "e o segundo?"), ele repete a intenção anterior.
 
 Por que assim: perguntas duplas são raras num chat de loja; não acrescenta chamadas ao modelo; não muda o 04 (o `fim` continua com uma só `intencao`). Alternativas descartadas: vários agentes na mesma resposta (espera dobrada na RTX 4060, retrabalho no 04, depuração difícil) e um passo extra para dividir a mensagem (mais uma chamada e mais um ponto de erro).
 
 ## 4. Agentes especializados
 
-A completar, um por um: papel, instruções (system prompt), ferramentas, regras e exemplos.
+Cada agente tem papel, ferramentas e instrução (system prompt) próprios. As instruções são a v1; o texto pode ser ajustado pelos resultados das 20 perguntas de teste (seção 8).
 
 ### 4.1 Agente de produtos
 
@@ -121,7 +122,7 @@ Regras:
 | 7 | Proteção contra prompt injection (tentativa de manipular o assistente por mensagem) |
 
 - **Por que curta e numerada:** modelos pequenos como o `qwen3:8b` seguem melhor poucas regras diretas, e nos testes fica fácil apontar qual regra falhou.
-- **Pendente para a seção 5:** `consultarProduto` precisa do `produtoId`; quando o cliente diz "esse primeiro tem glúten?", o agente precisa lembrar o id do produto mostrado antes.
+- **Como o agente sabe o id de "o primeiro":** pela lista de últimos produtos mostrados que o código acrescenta à instrução (seção 5, A09).
 ### 4.2 Agente de políticas
 
 *Decidido em 17/11/2026 (A06).*
@@ -207,7 +208,40 @@ Regras:
 
 ## 5. Memória da conversa
 
-A completar: uso do `conversaId` (04, seção 7.1) e quantas mensagens anteriores cada agente recebe.
+*Decidido em 19/11/2026 (A08 a A10).*
+
+### 5.1 O que a memória do Spring AI guarda (e o que não guarda)
+
+A memória do chat usa o `JdbcChatMemoryRepository` do Spring AI, na tabela `SPRING_AI_CHAT_MEMORY` (03, seção 6.2), com o `conversaId` como identificador (04, seção 7.1).
+
+Ela guarda **só o que o cliente escreveu e o texto final do assistente**. A documentação do Spring AI informa que as mensagens intermediárias das chamadas de ferramentas não são guardadas, e que o `JdbcChatMemoryRepository` descarta essas mensagens ao salvar. Ou seja: os ids e os cards devolvidos pelas ferramentas **não ficam na memória**. Além disso, o texto destaca no máximo 3 produtos (A05), então o 4º e o 5º card nem aparecem nele.
+
+### 5.2 Memória de texto (A08)
+
+- `MessageWindowChatMemory` com o `JdbcChatMemoryRepository`, janela de **10 mensagens** (as 5 últimas perguntas e respostas). O padrão do Spring AI é 20; usamos 10 porque cada mensagem é texto a mais para o `qwen3:8b` ler, o que deixa a resposta mais lenta na RTX 4060. Ajustável pelos testes.
+- Os três agentes **compartilham** a mesma memória (mesmo `conversaId`): o agente de pedidos sabe o que o agente de produtos respondeu.
+- O roteador **não** usa o histórico; recebe só a mensagem e a intenção anterior (A10).
+- A resposta pronta de `FORA_DO_TEMA` não passa pelo LLM e não é guardada na memória.
+- "Nova conversa" no front-end gera outro `conversaId` e começa do zero (C15). Apagar conversas antigas fica fora do MVP.
+
+### 5.3 Últimos produtos mostrados (A09)
+
+O código guarda, por conversa, a lista do último evento `produtos` (que já passa pelo coletor de eventos, F07), **na mesma ordem dos cards e com os ids**, e a última intenção. Antes de chamar o agente de produtos ou o de pedidos, acrescenta à instrução um bloco curto:
+
+```
+Produtos mostrados por último, na ordem dos cards:
+1. Café Torrado em Grãos Torra Média, Serra Alta (id 12)
+2. ...
+```
+
+- "O primeiro" passa a ser **o primeiro card que o cliente vê**, e não o primeiro produto citado no texto.
+- Segue a F15: só a última busca conta.
+- No MVP, a lista fica na memória do servidor (um mapa por `conversaId`). Se o back-end reiniciar, ela some; o agente de pedidos então pede para o cliente procurar de novo (regra 2 da seção 4.3). Limitação aceita no MVP.
+- Alternativa descartada: controlar manualmente a execução das ferramentas para guardar tudo na memória do Spring AI. É mais complexo e enche a janela de mensagens rapidamente.
+
+### 5.4 Intenção anterior para o roteador (A10)
+
+O mesmo registro do 5.3 guarda a última intenção. O roteador recebe a mensagem e essa intenção, com a regra 3 da seção 3: se a mensagem só continua o assunto anterior (ex.: "e o segundo?"), vale a intenção anterior. É mais simples e mais rápido do que dar ao roteador o histórico inteiro.
 
 ## 6. Erros do chat
 
@@ -287,6 +321,9 @@ Só falhas que impedem o assistente de terminar a resposta viram o evento `erro`
 | A05 | Agente de produtos: ferramentas T1 e T2 e instrução v1 com 8 regras; o texto destaca no máximo 3 produtos, com uma frase curta cada; alergia: informa o cadastro e indica o rótulo (seção 4.1) |
 | A06 | Agente de políticas: ferramenta T3 e instrução v1 com 8 regras; responde só com os trechos, sem conhecimento geral nem promessas, em até 3 frases; ignora instruções escondidas nos trechos (seção 4.2) |
 | A07 | Agente de pedidos: 5 ferramentas e instrução v1 com 9 regras; só propõe e nunca diz "adicionei"; produto ainda não mostrado → pede ao cliente para procurar primeiro (opção A); `consultarProduto` só quando o cliente pede detalhes (descrição ajustada no 05 v0.3) (seção 4.3) |
+| A08 | Memória de texto do Spring AI (`JdbcChatMemoryRepository`), janela de 10 mensagens, compartilhada pelos três agentes; roteador sem histórico; resposta pronta não é guardada (seção 5.2) |
+| A09 | O código guarda, por conversa, os últimos produtos mostrados (ordem dos cards, com ids) e acrescenta essa lista à instrução dos agentes de produtos e de pedidos, porque a memória do Spring AI não guarda resultados de ferramentas; no MVP, em memória do servidor (seção 5.3). 05 corrigido na v0.4 |
+| A10 | O roteador recebe a intenção anterior; mensagem que só continua o assunto anterior repete essa intenção (seções 3 e 5.4) |
 
 ## 10. Perguntas em aberto
 
@@ -301,3 +338,5 @@ Só falhas que impedem o assistente de terminar a resposta viram o evento `erro`
 - [Self-Correcting Structured Output in Spring AI 2.0 (blog oficial do Spring)](https://spring.io/blog/2026/06/23/spring-ai-self-correcting-structured-output/)
 - [Spring AI: validação de saída estruturada e limitações com modelos de raciocínio do Ollama (documentação oficial)](https://docs.spring.io/spring-ai/reference/2.1/api/structured-output/validation.html)
 - [Ollama: Structured outputs (blog oficial)](https://registry.ollama.ai/blog/structured-outputs)
+- [Spring AI: Chat Memory, `MessageWindowChatMemory` e limitação com mensagens de ferramentas (documentação oficial)](https://docs.spring.io/spring-ai/reference/api/chat-memory.html)
+- [Spring AI: `JdbcChatMemoryRepository` descarta mensagens de ferramentas (documentação oficial)](https://docs.spring.io/spring-ai/reference/2.1-SNAPSHOT/api/chat-memory.html)
