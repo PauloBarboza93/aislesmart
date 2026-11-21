@@ -1,6 +1,6 @@
 # 07-Machine Learning
 
-> **Status:** rascunho v0.2 (20/11/2026): M01 decidida (seção 3): o modelo classifica a intenção da mensagem. As seções 4 a 9 serão preenchidas uma por vez.
+> **Status:** rascunho v0.3 (21/11/2026): M02 decidida (seção 4.1): a entrada tem a intenção anterior e a mensagem. v0.2 (20/11/2026): M01, o modelo classifica a intenção (seção 3). As seções 4 a 9 serão preenchidas uma por vez.
 > **Autor:** Paulo Oliveira
 > **Depende de:** 01-PRD (Parte B), 05-Ferramentas MCP (filtros da `buscarProdutos`) e 06-Agentes (intenções e as 20 perguntas de teste).
 
@@ -71,7 +71,29 @@ Definir a **Parte B** do AisleSmart: o trabalho de ML (Machine Learning, aprendi
 
 ## 4. Dataset
 
-*A preencher.* Já decidido: perguntas de clientes em **português**, cada uma com a **intenção esperada** (M01). A definir: quantidade, como gerar e revisar as perguntas, equilíbrio entre as 4 intenções, divisão treino / validação / teste e licença de publicação.
+Perguntas de clientes em **português**, cada uma com a **intenção esperada** (M01).
+
+### 4.1 Formato de cada exemplo
+
+*Decidido em 21/11/2026 (M02).*
+
+Cada exemplo tem **3 colunas**:
+
+| Coluna | O que é | Exemplo |
+| --- | --- | --- |
+| `intencao_anterior` | A intenção da mensagem anterior da conversa; `NENHUMA` na primeira mensagem | `PRODUTOS` |
+| `mensagem` | O que o cliente escreveu | `e o segundo?` |
+| `intencao` | A resposta esperada: `PRODUTOS`, `POLITICAS`, `PEDIDOS` ou `FORA_DO_TEMA` | `PRODUTOS` |
+
+**Por que a intenção anterior:** é a mesma entrada que o roteador recebe no 06 (A10). Sem ela, continuações como "e o segundo?" não têm assunto, e o modelo erraria justamente onde o roteador acerta. Os quatro concorrentes recebem o mesmo texto; no scikit-learn, a intenção anterior entra como mais uma palavra do texto. Assim, a pesquisa mede a tarefa real e o 06 não muda.
+
+**Alternativa descartada:** só a mensagem (2 colunas). Mais simples, mas o modelo erraria as continuações e o A10 teria de ser resolvido de outro jeito na loja (retrabalho no 06).
+
+> **Para o dataset:** é preciso ter exemplos de continuação (mesma intenção da anterior) e de troca de assunto (intenção diferente da anterior), para o modelo não aprender só a repetir a intenção anterior.
+
+### 4.2 Tamanho, origem e divisão
+
+*A preencher (M03).* A definir: quantidade, como gerar e revisar as perguntas, equilíbrio entre as 4 intenções, divisão treino / validação / teste e licença de publicação.
 
 ## 5. Baseline
 
@@ -98,14 +120,15 @@ Definir a **Parte B** do AisleSmart: o trabalho de ML (Machine Learning, aprendi
 | Id | Decisão |
 | --- | --- |
 | M01 | O modelo da Parte B classifica a intenção da mensagem (`PRODUTOS`, `POLITICAS`, `PEDIDOS`, `FORA_DO_TEMA`); concorrentes: baseline scikit-learn, modelo ~4B sem ajuste, modelo ~4B ajustado e `qwen3:8b`; o modelo ajustado entra no roteador. Extrair filtros em JSON foi descartado (seção 3) |
+| M02 | Cada exemplo tem 3 colunas: `intencao_anterior` (`NENHUMA` na primeira mensagem), `mensagem` e `intencao`; todos os concorrentes recebem a intenção anterior, como o roteador (06, A10) (seção 4.1) |
 
 ## 11. Perguntas em aberto
 
 | Pergunta | Quando responder | Onde a resposta entra |
 | --- | --- | --- |
 | [x] M01: qual é a tarefa do modelo? **Classificar a intenção** (20/11/2026) | — | Seção 3 |
-| [ ] Tamanho e forma de criar o dataset | Próxima conversa do 07 | Seção 4 |
-| [ ] O modelo recebe também a intenção anterior, como o roteador (06, A10), para entender "e o segundo?"? | Junto com o dataset | Seções 4 e 9 |
+| [x] M02: o modelo recebe também a intenção anterior, como o roteador (06, A10)? **Sim** (21/11/2026) | — | Seção 4.1 |
+| [ ] M03: tamanho, origem e divisão do dataset | Próxima decisão | Seção 4.2 |
 | [ ] Modelo base de ~4B | Antes do fine-tuning | Seção 6 |
 | [ ] O `qwen3:8b` e o modelo ~4B cabem juntos nos 8 GB de VRAM, ou o Ollama vai alternar entre eles (mais espera)? | Seção 9, com teste prático | Seção 9 |
 | [ ] Se o scikit-learn vencer, o que vai para a loja? (Ele roda em Python, e a loja é Java) | Depois da avaliação | Seções 7 e 9 |
