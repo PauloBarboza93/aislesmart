@@ -1,6 +1,6 @@
 # 07-Machine Learning
 
-> **Status:** rascunho v0.3 (21/11/2026): M02 decidida (seção 4.1): a entrada tem a intenção anterior e a mensagem. v0.2 (20/11/2026): M01, o modelo classifica a intenção (seção 3). As seções 4 a 9 serão preenchidas uma por vez.
+> **Status:** rascunho v0.4 (21/11/2026): M03 decidida (seção 4.2): cerca de 400 exemplos, com teste de 80 escrito só à mão. v0.3 (21/11/2026): M02, a entrada tem a intenção anterior e a mensagem (seção 4.1). v0.2 (20/11/2026): M01, o modelo classifica a intenção (seção 3). As seções 4 a 9 serão preenchidas uma por vez.
 > **Autor:** Paulo Oliveira
 > **Depende de:** 01-PRD (Parte B), 05-Ferramentas MCP (filtros da `buscarProdutos`) e 06-Agentes (intenções e as 20 perguntas de teste).
 
@@ -91,9 +91,35 @@ Cada exemplo tem **3 colunas**:
 
 > **Para o dataset:** é preciso ter exemplos de continuação (mesma intenção da anterior) e de troca de assunto (intenção diferente da anterior), para o modelo não aprender só a repetir a intenção anterior.
 
-### 4.2 Tamanho, origem e divisão
+### 4.2 Tamanho e divisão
 
-*A preencher (M03).* A definir: quantidade, como gerar e revisar as perguntas, equilíbrio entre as 4 intenções, divisão treino / validação / teste e licença de publicação.
+*Decidido em 21/11/2026 (M03).*
+
+| Parte | Quantidade | Para que serve | Origem |
+| --- | --- | --- | --- |
+| Treino | ~270 | Os modelos aprendem com estes | À mão + gerados (M04) |
+| Validação | ~50 | Acompanhar o fine-tuning e perceber se o modelo está "decorando" os exemplos | À mão + gerados |
+| Teste | 80 (20 por intenção) | A nota final da pesquisa; nenhum modelo vê estes exemplos antes | Só à mão |
+| **Total** | **~400** (~100 por intenção) | | |
+
+**Regras:**
+
+1. **Mesma quantidade por intenção** em cada parte, para nenhum modelo tirar nota alta só por chutar a intenção mais comum.
+2. **Mistura de situações em todas as partes:** cerca de metade como primeira mensagem (`intencao_anterior = NENHUMA`), um quarto de continuação (mesma intenção da anterior) e um quarto de troca de assunto (intenção diferente) (seção 4.1).
+3. **O teste é escrito só à mão** e inclui as 20 perguntas de teste do 06 (seção 8), adaptadas ao formato da seção 4.1. Assim, nenhum modelo é avaliado em texto parecido com o que um LLM gerou, e a pesquisa conversa com os testes do assistente.
+4. Nenhuma mensagem se repete entre treino, validação e teste.
+
+**Por que esse tamanho:** dá para revisar linha por linha em uma ou duas sessões. Para 4 classes, a regressão logística já funciona bem com algumas dezenas de exemplos por classe, e algumas centenas costumam bastar para o fine-tuning de uma tarefa simples. Se a validação mostrar que falta, o treino cresce depois sem refazer o teste.
+
+**Alternativas descartadas:** ~200 exemplos (o teste ficaria pequeno e a nota, instável) e ~1.000 (revisão de dias, com ganho provável pequeno para 4 classes).
+
+### 4.3 Geração dos exemplos
+
+*A preencher (M04).*
+
+### 4.4 Formato do arquivo e licença
+
+*A preencher (M05).*
 
 ## 5. Baseline
 
@@ -121,6 +147,7 @@ Cada exemplo tem **3 colunas**:
 | --- | --- |
 | M01 | O modelo da Parte B classifica a intenção da mensagem (`PRODUTOS`, `POLITICAS`, `PEDIDOS`, `FORA_DO_TEMA`); concorrentes: baseline scikit-learn, modelo ~4B sem ajuste, modelo ~4B ajustado e `qwen3:8b`; o modelo ajustado entra no roteador. Extrair filtros em JSON foi descartado (seção 3) |
 | M02 | Cada exemplo tem 3 colunas: `intencao_anterior` (`NENHUMA` na primeira mensagem), `mensagem` e `intencao`; todos os concorrentes recebem a intenção anterior, como o roteador (06, A10) (seção 4.1) |
+| M03 | Cerca de 400 exemplos (~100 por intenção): ~270 de treino, ~50 de validação e 80 de teste (20 por intenção), escrito só à mão e com as 20 perguntas do 06; mesma quantidade por intenção; metade primeira mensagem, um quarto continuação e um quarto troca de assunto (seção 4.2) |
 
 ## 11. Perguntas em aberto
 
@@ -128,13 +155,16 @@ Cada exemplo tem **3 colunas**:
 | --- | --- | --- |
 | [x] M01: qual é a tarefa do modelo? **Classificar a intenção** (20/11/2026) | — | Seção 3 |
 | [x] M02: o modelo recebe também a intenção anterior, como o roteador (06, A10)? **Sim** (21/11/2026) | — | Seção 4.1 |
-| [ ] M03: tamanho, origem e divisão do dataset | Próxima decisão | Seção 4.2 |
+| [x] M03: tamanho e divisão do dataset. **~400 exemplos, teste de 80 escrito à mão** (21/11/2026) | — | Seção 4.2 |
+| [ ] M04: como gerar os exemplos de treino e validação | Próxima decisão | Seção 4.3 |
+| [ ] M05: formato do arquivo e licença de publicação | Depois da M04 | Seção 4.4 |
 | [ ] Modelo base de ~4B | Antes do fine-tuning | Seção 6 |
 | [ ] O `qwen3:8b` e o modelo ~4B cabem juntos nos 8 GB de VRAM, ou o Ollama vai alternar entre eles (mais espera)? | Seção 9, com teste prático | Seção 9 |
 | [ ] Se o scikit-learn vencer, o que vai para a loja? (Ele roda em Python, e a loja é Java) | Depois da avaliação | Seções 7 e 9 |
 
 ## Fontes
 
+- [Logistic Regression makes small LLMs strong and explainable "tens-of-shot" classifiers (Bank of England)](https://www.bankofengland.co.uk/working-paper/2025/improving-text-classification-logistic-regression-llms-tens-of-shot-classifiers): bom desempenho com dezenas de exemplos por classe
 - [Text Classification in the LLM Era: Where do we stand? (artigo, arXiv)](https://arxiv.org/pdf/2502.11830): regressão logística competitiva com LLMs ajustados em classificação
 - [Reconhecimento de intenção em e-commerce multilíngue com QLoRA (artigo, arXiv)](https://arxiv.org/pdf/2510.21970v1)
 - [Como treinar um modelo de decisão para classificar intenções com Unsloth e Qwen3.5-4B (Machine Learning Mastery)](https://machinelearningmastery.com/how-to-train-your-own-decision-model-like-jev-using-unsloth/)
