@@ -1,6 +1,6 @@
 # 07-Machine Learning
 
-> **Status:** rascunho v0.4 (21/11/2026): M03 decidida (seção 4.2): cerca de 400 exemplos, com teste de 80 escrito só à mão. v0.3 (21/11/2026): M02, a entrada tem a intenção anterior e a mensagem (seção 4.1). v0.2 (20/11/2026): M01, o modelo classifica a intenção (seção 3). As seções 4 a 9 serão preenchidas uma por vez.
+> **Status:** rascunho v0.5 (21/11/2026): M04 decidida (seção 4.3): ~100 exemplos de treino e validação escritos à mão e ~220 gerados pelo `qwen3:8b` local, todos revisados. v0.4 (21/11/2026): M03, cerca de 400 exemplos, com teste de 80 escrito só à mão (seção 4.2). v0.3 (21/11/2026): M02, a entrada tem a intenção anterior e a mensagem (seção 4.1). v0.2 (20/11/2026): M01, o modelo classifica a intenção (seção 3). As seções 4 a 9 serão preenchidas uma por vez.
 > **Autor:** Paulo Oliveira
 > **Depende de:** 01-PRD (Parte B), 05-Ferramentas MCP (filtros da `buscarProdutos`) e 06-Agentes (intenções e as 20 perguntas de teste).
 
@@ -115,7 +115,36 @@ Cada exemplo tem **3 colunas**:
 
 ### 4.3 Geração dos exemplos
 
-*A preencher (M04).*
+*Decidido em 21/11/2026 (M04).*
+
+| Parte | Quantos | Como |
+| --- | --- | --- |
+| Teste | 80 | Só à mão (M03) |
+| Treino e validação | ~100 | À mão, por Paulo Oliveira |
+| Treino e validação | ~220 | Gerados pelo `qwen3:8b` no Ollama local e revisados um a um |
+
+**Como gerar:**
+
+- A geração roda no caderno `ml/notebooks/01_dados.ipynb` (02, seção 8), chamando o Ollama local. O texto do pedido (prompt) usado fica salvo no repositório, para qualquer pessoa repetir a geração.
+- O pedido inclui a intenção, a intenção anterior e a situação (primeira mensagem, continuação ou troca de assunto), para manter as proporções da M03.
+- **Variedade de propósito:** abreviações ("vcs", "qto"), frases sem acento, erros de digitação, mensagens curtas e longas, perguntas e pedidos diretos. Cliente real não escreve como num livro.
+
+**Como revisar (cada exemplo gerado):**
+
+- Descartar mensagens repetidas ou quase iguais a outras.
+- Corrigir o rótulo quando a intenção estiver errada, seguindo as regras do roteador (06, A04): assunto da loja vence saudação; entre dois assuntos da loja, vale o primeiro.
+- Descartar mensagens que não pareçam escritas por um cliente.
+- Conferir que nenhuma mensagem é igual ou muito parecida com uma do teste.
+
+**Por que o `qwen3:8b`:**
+
+- **Licença:** os modelos Qwen3 têm pesos abertos sob a licença Apache 2.0, que permite usar e publicar o que eles geram. Como o dataset vai para o Hugging Face, isso importa.
+- **Sem custo:** já está instalado e roda no próprio computador.
+- **Sem zona cinzenta:** os termos de uso do Claude.ai proíbem usar o serviço para desenvolver produtos que concorram com os da Anthropic. Um classificador de intenções para uma loja dificilmente se encaixa nisso, mas usar um modelo de licença aberta evita a dúvida.
+
+**Cuidado já resolvido:** o `qwen3:8b` também é um dos concorrentes da avaliação. Como o teste é escrito só à mão (M03), ele não leva vantagem por ter gerado parte do treino.
+
+**Alternativa descartada:** escrever os ~320 exemplos à mão. Mais autêntico, mas muito mais trabalhoso; gerar com LLM e revisar é uma prática comum e fica documentada na pesquisa.
 
 ### 4.4 Formato do arquivo e licença
 
@@ -148,6 +177,7 @@ Cada exemplo tem **3 colunas**:
 | M01 | O modelo da Parte B classifica a intenção da mensagem (`PRODUTOS`, `POLITICAS`, `PEDIDOS`, `FORA_DO_TEMA`); concorrentes: baseline scikit-learn, modelo ~4B sem ajuste, modelo ~4B ajustado e `qwen3:8b`; o modelo ajustado entra no roteador. Extrair filtros em JSON foi descartado (seção 3) |
 | M02 | Cada exemplo tem 3 colunas: `intencao_anterior` (`NENHUMA` na primeira mensagem), `mensagem` e `intencao`; todos os concorrentes recebem a intenção anterior, como o roteador (06, A10) (seção 4.1) |
 | M03 | Cerca de 400 exemplos (~100 por intenção): ~270 de treino, ~50 de validação e 80 de teste (20 por intenção), escrito só à mão e com as 20 perguntas do 06; mesma quantidade por intenção; metade primeira mensagem, um quarto continuação e um quarto troca de assunto (seção 4.2) |
+| M04 | Treino e validação: ~100 exemplos escritos à mão e ~220 gerados pelo `qwen3:8b` no Ollama local (licença Apache 2.0), com variedade de escrita e revisão um a um; o prompt de geração fica salvo no repositório (seção 4.3) |
 
 ## 11. Perguntas em aberto
 
@@ -156,8 +186,8 @@ Cada exemplo tem **3 colunas**:
 | [x] M01: qual é a tarefa do modelo? **Classificar a intenção** (20/11/2026) | — | Seção 3 |
 | [x] M02: o modelo recebe também a intenção anterior, como o roteador (06, A10)? **Sim** (21/11/2026) | — | Seção 4.1 |
 | [x] M03: tamanho e divisão do dataset. **~400 exemplos, teste de 80 escrito à mão** (21/11/2026) | — | Seção 4.2 |
-| [ ] M04: como gerar os exemplos de treino e validação | Próxima decisão | Seção 4.3 |
-| [ ] M05: formato do arquivo e licença de publicação | Depois da M04 | Seção 4.4 |
+| [x] M04: como gerar os exemplos de treino e validação. **~100 à mão + ~220 gerados pelo `qwen3:8b` local, revisados** (21/11/2026) | — | Seção 4.3 |
+| [ ] M05: formato do arquivo e licença de publicação | Próxima decisão | Seção 4.4 |
 | [ ] Modelo base de ~4B | Antes do fine-tuning | Seção 6 |
 | [ ] O `qwen3:8b` e o modelo ~4B cabem juntos nos 8 GB de VRAM, ou o Ollama vai alternar entre eles (mais espera)? | Seção 9, com teste prático | Seção 9 |
 | [ ] Se o scikit-learn vencer, o que vai para a loja? (Ele roda em Python, e a loja é Java) | Depois da avaliação | Seções 7 e 9 |
@@ -165,6 +195,8 @@ Cada exemplo tem **3 colunas**:
 ## Fontes
 
 - [Logistic Regression makes small LLMs strong and explainable "tens-of-shot" classifiers (Bank of England)](https://www.bankofengland.co.uk/working-paper/2025/improving-text-classification-logistic-regression-llms-tens-of-shot-classifiers): bom desempenho com dezenas de exemplos por classe
+- [Qwen3: modelos densos de 0.6B a 32B sob licença Apache 2.0 (blog oficial do Qwen)](https://qwenlm.github.io/blog/qwen3/)
+- [Termos de uso do Claude.ai, seção 3 (Anthropic)](https://www.anthropic.com/legal/consumer-terms)
 - [Text Classification in the LLM Era: Where do we stand? (artigo, arXiv)](https://arxiv.org/pdf/2502.11830): regressão logística competitiva com LLMs ajustados em classificação
 - [Reconhecimento de intenção em e-commerce multilíngue com QLoRA (artigo, arXiv)](https://arxiv.org/pdf/2510.21970v1)
 - [Como treinar um modelo de decisão para classificar intenções com Unsloth e Qwen3.5-4B (Machine Learning Mastery)](https://machinelearningmastery.com/how-to-train-your-own-decision-model-like-jev-using-unsloth/)
