@@ -1,6 +1,6 @@
 # 07-Machine Learning
 
-> **Status:** rascunho v0.7 (25/11/2026): M06 decidida (seção 5): baseline com TF-IDF de pedaços de 2 a 5 letras e regressão logística. v0.6 (25/11/2026): M05, 3 arquivos CSV com a coluna `origem` e licença CC BY 4.0; seção 4 (dataset) completa. v0.5 (21/11/2026): M04, ~100 exemplos de treino e validação escritos à mão e ~220 gerados pelo `qwen3:8b` local, todos revisados (seção 4.3). v0.4 (21/11/2026): M03, cerca de 400 exemplos, com teste de 80 escrito só à mão (seção 4.2). v0.3 (21/11/2026): M02, a entrada tem a intenção anterior e a mensagem (seção 4.1). v0.2 (20/11/2026): M01, o modelo classifica a intenção (seção 3). As seções 4 a 9 serão preenchidas uma por vez.
+> **Status:** rascunho v0.8 (25/11/2026): M07 decidida (seção 6.1): modelo base Qwen3-4B-Instruct-2507. v0.7 (25/11/2026): M06, baseline com TF-IDF de pedaços de 2 a 5 letras e regressão logística (seção 5). v0.6 (25/11/2026): M05, 3 arquivos CSV com a coluna `origem` e licença CC BY 4.0; seção 4 (dataset) completa. v0.5 (21/11/2026): M04, ~100 exemplos de treino e validação escritos à mão e ~220 gerados pelo `qwen3:8b` local, todos revisados (seção 4.3). v0.4 (21/11/2026): M03, cerca de 400 exemplos, com teste de 80 escrito só à mão (seção 4.2). v0.3 (21/11/2026): M02, a entrada tem a intenção anterior e a mensagem (seção 4.1). v0.2 (20/11/2026): M01, o modelo classifica a intenção (seção 3). As seções 4 a 9 serão preenchidas uma por vez.
 > **Autor:** Paulo Oliveira
 > **Depende de:** 01-PRD (Parte B), 05-Ferramentas MCP (filtros da `buscarProdutos`) e 06-Agentes (intenções e as 20 perguntas de teste).
 
@@ -48,7 +48,7 @@ Definir a **Parte B** do AisleSmart: o trabalho de ML (Machine Learning, aprendi
 | Concorrente | O que é |
 | --- | --- |
 | Baseline | Classificador de texto do scikit-learn (ponto de partida: TF-IDF, *Term Frequency–Inverse Document Frequency*, que transforma o texto em números pelas palavras importantes, com regressão logística; confirmar na seção 5) |
-| Modelo ~4B sem ajuste | O mesmo modelo base, só com instrução, para medir o ganho do ajuste |
+| Modelo ~4B sem ajuste | O mesmo modelo base (Qwen3-4B-Instruct-2507, M07), só com instrução, para medir o ganho do ajuste |
 | Modelo ~4B ajustado | O modelo base depois do fine-tuning com QLoRA |
 | `qwen3:8b` | O modelo que o roteador usa hoje (06) |
 
@@ -218,7 +218,30 @@ baseline = make_pipeline(
 
 ## 6. Fine-tuning
 
-*A preencher.* Já decidido no PRD: **QLoRA** no **Unsloth**, modelo base de cerca de **4B** parâmetros (a definir), treinado no próprio computador (WSL2, RTX 4060).
+Já decidido no PRD: **QLoRA** no **Unsloth**, treinado no próprio computador (WSL2, RTX 4060).
+
+### 6.1 Modelo base
+
+*Decidido em 25/11/2026 (M07).*
+
+**Modelo:** `Qwen3-4B-Instruct-2507` (licença Apache 2.0), carregado no Unsloth pela versão já comprimida em 4 bits que o próprio Unsloth publica no Hugging Face.
+
+**Por que este:**
+
+- **Sem o modo "pensar":** esta versão só responde direto, sem blocos de raciocínio. Isso elimina no roteador o cuidado anotado no 06 (A03), de desligar o pensamento do `qwen3`.
+- **Cabe na RTX 4060:** pela tabela do Unsloth, o QLoRA precisa de pelo menos ~3,5 GB para 3B e ~5 GB para 7B; um 4B fica perto de 4 GB, com folga nos 8 GB.
+- **Leve no Ollama:** comprimido em 4 bits (Q4_K_M), tem cerca de 2,5 GB, menos da metade do `qwen3:8b`.
+- **Comparação justa:** é da mesma família do `qwen3:8b` (M01), então a pesquisa compara tamanho e ajuste, não famílias diferentes de modelo.
+- **Licença Apache 2.0:** permite publicar o modelo ajustado no Hugging Face (seção 8).
+
+**Alternativas descartadas:**
+
+- **Qwen3.5-4B** (Apache 2.0, mais novo): também processa imagens, o que traz peças sem uso aqui, e tem arquitetura mais recente, com mais chance de problema na conversão para o Ollama. Pode entrar depois como experimento extra.
+- **Gemma 3 4B e Llama 3.2 3B:** licenças próprias, com mais regras para publicar o modelo ajustado.
+
+### 6.2 Configuração do treino
+
+*A preencher (M08).*
 
 ## 7. Avaliação
 
@@ -242,6 +265,7 @@ baseline = make_pipeline(
 | M04 | Treino e validação: ~100 exemplos escritos à mão e ~220 gerados pelo `qwen3:8b` no Ollama local (licença Apache 2.0), com variedade de escrita e revisão um a um; o prompt de geração fica salvo no repositório (seção 4.3) |
 | M05 | Três arquivos CSV em UTF-8 (`treino.csv`, `validacao.csv`, `teste.csv`) em `ml/dados/`, com as colunas da M02 e mais `origem` (`manual` ou `gerado`, só para a análise); licença CC BY 4.0 (seção 4.4) |
 | M06 | Baseline: `TfidfVectorizer(analyzer="char_wb", ngram_range=(2, 5), strip_accents="unicode")` + `LogisticRegression`; entrada "intenção anterior \| mensagem"; a validação compara só com palavras inteiras (`word`, `(1, 2)`); teste usado uma vez, no fim (seção 5) |
+| M07 | Modelo base do fine-tuning: `Qwen3-4B-Instruct-2507` (Apache 2.0; só modo sem pensamento; ~4 GB de VRAM no QLoRA; ~2,5 GB no Ollama em Q4_K_M). Qwen3.5-4B, Gemma 3 4B e Llama 3.2 3B descartados (seção 6.1) |
 
 ## 11. Perguntas em aberto
 
@@ -253,7 +277,8 @@ baseline = make_pipeline(
 | [x] M04: como gerar os exemplos de treino e validação. **~100 à mão + ~220 gerados pelo `qwen3:8b` local, revisados** (21/11/2026) | — | Seção 4.3 |
 | [x] M05: formato do arquivo e licença de publicação. **3 CSV em UTF-8 com a coluna `origem`; CC BY 4.0** (25/11/2026) | — | Seção 4.4 |
 | [x] M06: modelo do baseline. **TF-IDF com pedaços de 2 a 5 letras + regressão logística** (25/11/2026) | — | Seção 5 |
-| [ ] M07: modelo base de ~4B para o fine-tuning | Próxima decisão | Seção 6 |
+| [x] M07: modelo base de ~4B para o fine-tuning. **Qwen3-4B-Instruct-2507** (25/11/2026) | — | Seção 6.1 |
+| [ ] M08: configuração do treino (formato do exemplo, parâmetros do LoRA, épocas) | Próxima decisão | Seção 6.2 |
 | [ ] O `qwen3:8b` e o modelo ~4B cabem juntos nos 8 GB de VRAM, ou o Ollama vai alternar entre eles (mais espera)? | Seção 9, com teste prático | Seção 9 |
 | [ ] Se o scikit-learn vencer, o que vai para a loja? (Ele roda em Python, e a loja é Java) | Depois da avaliação | Seções 7 e 9 |
 
@@ -264,6 +289,8 @@ baseline = make_pipeline(
 - [Termos de uso do Claude.ai, seção 3 (Anthropic)](https://www.anthropic.com/legal/consumer-terms)
 - [Hugging Face: formatos aceitos no upload de datasets, entre eles CSV (documentação oficial)](https://huggingface.co/docs/datasets/v2.10.0/upload_dataset)
 - [scikit-learn: `TfidfVectorizer`, parâmetros `analyzer`, `ngram_range` e `strip_accents` (documentação oficial)](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html)
+- [Unsloth: requisitos de VRAM para QLoRA por tamanho de modelo (documentação oficial)](https://docs.unsloth.ai/get-started/beginner-start-here/unsloth-requirements)
+- [Unsloth: Qwen3-4B-Instruct-2507 em GGUF, só modo sem pensamento (Hugging Face)](https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF)
 - [Text Classification in the LLM Era: Where do we stand? (artigo, arXiv)](https://arxiv.org/pdf/2502.11830): regressão logística competitiva com LLMs ajustados em classificação
 - [Reconhecimento de intenção em e-commerce multilíngue com QLoRA (artigo, arXiv)](https://arxiv.org/pdf/2510.21970v1)
 - [Como treinar um modelo de decisão para classificar intenções com Unsloth e Qwen3.5-4B (Machine Learning Mastery)](https://machinelearningmastery.com/how-to-train-your-own-decision-model-like-jev-using-unsloth/)
