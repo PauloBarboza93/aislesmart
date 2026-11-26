@@ -1,6 +1,6 @@
 # 07-Machine Learning
 
-> **Status:** rascunho v0.5 (21/11/2026): M04 decidida (seção 4.3): ~100 exemplos de treino e validação escritos à mão e ~220 gerados pelo `qwen3:8b` local, todos revisados. v0.4 (21/11/2026): M03, cerca de 400 exemplos, com teste de 80 escrito só à mão (seção 4.2). v0.3 (21/11/2026): M02, a entrada tem a intenção anterior e a mensagem (seção 4.1). v0.2 (20/11/2026): M01, o modelo classifica a intenção (seção 3). As seções 4 a 9 serão preenchidas uma por vez.
+> **Status:** rascunho v0.6 (25/11/2026): M05 decidida (seção 4.4): 3 arquivos CSV com a coluna `origem` e licença CC BY 4.0; seção 4 (dataset) completa. v0.5 (21/11/2026): M04, ~100 exemplos de treino e validação escritos à mão e ~220 gerados pelo `qwen3:8b` local, todos revisados (seção 4.3). v0.4 (21/11/2026): M03, cerca de 400 exemplos, com teste de 80 escrito só à mão (seção 4.2). v0.3 (21/11/2026): M02, a entrada tem a intenção anterior e a mensagem (seção 4.1). v0.2 (20/11/2026): M01, o modelo classifica a intenção (seção 3). As seções 4 a 9 serão preenchidas uma por vez.
 > **Autor:** Paulo Oliveira
 > **Depende de:** 01-PRD (Parte B), 05-Ferramentas MCP (filtros da `buscarProdutos`) e 06-Agentes (intenções e as 20 perguntas de teste).
 
@@ -148,7 +148,33 @@ Cada exemplo tem **3 colunas**:
 
 ### 4.4 Formato do arquivo e licença
 
-*A preencher (M05).*
+*Decidido em 25/11/2026 (M05).*
+
+**Arquivos:** três CSV (*Comma-Separated Values*, valores separados por vírgula), em UTF-8, na pasta `ml/dados/`:
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| `treino.csv` | ~270 exemplos |
+| `validacao.csv` | ~50 exemplos |
+| `teste.csv` | 80 exemplos, só escritos à mão |
+
+**Colunas:** as 3 da M02 e mais `origem`:
+
+```
+intencao_anterior,mensagem,intencao,origem
+PRODUTOS,e o segundo?,PRODUTOS,manual
+NENHUMA,vcs trocam produto vencido?,POLITICAS,gerado
+```
+
+- `origem` vale `manual` ou `gerado` (M04). Os modelos **não** leem essa coluna; ela serve para a avaliação comparar o desempenho nos exemplos escritos à mão e nos gerados.
+
+**Por que CSV:** abre em planilha (Excel, WPS, LibreOffice) para a revisão exemplo por exemplo (M04), é lido direto pelo pandas e pelo scikit-learn, e o Hugging Face aceita CSV. Um arquivo por parte deixa a divisão da M03 visível e evita misturar teste com treino.
+
+**Codificação:** UTF-8 comum, o padrão do Python e do Hugging Face. Para revisar numa planilha, abrir o arquivo escolhendo UTF-8 na janela de importação e salvar de novo como CSV em UTF-8, para os acentos não se perderem.
+
+**Licença:** CC BY 4.0 (*Creative Commons Attribution*): qualquer pessoa pode usar o dataset, inclusive comercialmente, desde que dê o crédito. É compatível com a M04 (o Qwen3 é Apache 2.0) e fica registrada no *dataset card* (o README do dataset no Hugging Face).
+
+**Alternativas descartadas:** JSON Lines (mais comum em fine-tuning, mas ruim de revisar em planilha; se o Unsloth pedir esse formato, o caderno converte na hora, sem mudar os arquivos) e um arquivo único com uma coluna de divisão (mais fácil de misturar as partes por engano).
 
 ## 5. Baseline
 
@@ -178,6 +204,7 @@ Cada exemplo tem **3 colunas**:
 | M02 | Cada exemplo tem 3 colunas: `intencao_anterior` (`NENHUMA` na primeira mensagem), `mensagem` e `intencao`; todos os concorrentes recebem a intenção anterior, como o roteador (06, A10) (seção 4.1) |
 | M03 | Cerca de 400 exemplos (~100 por intenção): ~270 de treino, ~50 de validação e 80 de teste (20 por intenção), escrito só à mão e com as 20 perguntas do 06; mesma quantidade por intenção; metade primeira mensagem, um quarto continuação e um quarto troca de assunto (seção 4.2) |
 | M04 | Treino e validação: ~100 exemplos escritos à mão e ~220 gerados pelo `qwen3:8b` no Ollama local (licença Apache 2.0), com variedade de escrita e revisão um a um; o prompt de geração fica salvo no repositório (seção 4.3) |
+| M05 | Três arquivos CSV em UTF-8 (`treino.csv`, `validacao.csv`, `teste.csv`) em `ml/dados/`, com as colunas da M02 e mais `origem` (`manual` ou `gerado`, só para a análise); licença CC BY 4.0 (seção 4.4) |
 
 ## 11. Perguntas em aberto
 
@@ -187,7 +214,7 @@ Cada exemplo tem **3 colunas**:
 | [x] M02: o modelo recebe também a intenção anterior, como o roteador (06, A10)? **Sim** (21/11/2026) | — | Seção 4.1 |
 | [x] M03: tamanho e divisão do dataset. **~400 exemplos, teste de 80 escrito à mão** (21/11/2026) | — | Seção 4.2 |
 | [x] M04: como gerar os exemplos de treino e validação. **~100 à mão + ~220 gerados pelo `qwen3:8b` local, revisados** (21/11/2026) | — | Seção 4.3 |
-| [ ] M05: formato do arquivo e licença de publicação | Próxima decisão | Seção 4.4 |
+| [x] M05: formato do arquivo e licença de publicação. **3 CSV em UTF-8 com a coluna `origem`; CC BY 4.0** (25/11/2026) | — | Seção 4.4 |
 | [ ] Modelo base de ~4B | Antes do fine-tuning | Seção 6 |
 | [ ] O `qwen3:8b` e o modelo ~4B cabem juntos nos 8 GB de VRAM, ou o Ollama vai alternar entre eles (mais espera)? | Seção 9, com teste prático | Seção 9 |
 | [ ] Se o scikit-learn vencer, o que vai para a loja? (Ele roda em Python, e a loja é Java) | Depois da avaliação | Seções 7 e 9 |
@@ -197,6 +224,7 @@ Cada exemplo tem **3 colunas**:
 - [Logistic Regression makes small LLMs strong and explainable "tens-of-shot" classifiers (Bank of England)](https://www.bankofengland.co.uk/working-paper/2025/improving-text-classification-logistic-regression-llms-tens-of-shot-classifiers): bom desempenho com dezenas de exemplos por classe
 - [Qwen3: modelos densos de 0.6B a 32B sob licença Apache 2.0 (blog oficial do Qwen)](https://qwenlm.github.io/blog/qwen3/)
 - [Termos de uso do Claude.ai, seção 3 (Anthropic)](https://www.anthropic.com/legal/consumer-terms)
+- [Hugging Face: formatos aceitos no upload de datasets, entre eles CSV (documentação oficial)](https://huggingface.co/docs/datasets/v2.10.0/upload_dataset)
 - [Text Classification in the LLM Era: Where do we stand? (artigo, arXiv)](https://arxiv.org/pdf/2502.11830): regressão logística competitiva com LLMs ajustados em classificação
 - [Reconhecimento de intenção em e-commerce multilíngue com QLoRA (artigo, arXiv)](https://arxiv.org/pdf/2510.21970v1)
 - [Como treinar um modelo de decisão para classificar intenções com Unsloth e Qwen3.5-4B (Machine Learning Mastery)](https://machinelearningmastery.com/how-to-train-your-own-decision-model-like-jev-using-unsloth/)
