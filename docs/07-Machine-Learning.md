@@ -1,6 +1,6 @@
 # 07-Machine Learning
 
-> **Status:** rascunho v0.6 (25/11/2026): M05 decidida (seção 4.4): 3 arquivos CSV com a coluna `origem` e licença CC BY 4.0; seção 4 (dataset) completa. v0.5 (21/11/2026): M04, ~100 exemplos de treino e validação escritos à mão e ~220 gerados pelo `qwen3:8b` local, todos revisados (seção 4.3). v0.4 (21/11/2026): M03, cerca de 400 exemplos, com teste de 80 escrito só à mão (seção 4.2). v0.3 (21/11/2026): M02, a entrada tem a intenção anterior e a mensagem (seção 4.1). v0.2 (20/11/2026): M01, o modelo classifica a intenção (seção 3). As seções 4 a 9 serão preenchidas uma por vez.
+> **Status:** rascunho v0.7 (25/11/2026): M06 decidida (seção 5): baseline com TF-IDF de pedaços de 2 a 5 letras e regressão logística. v0.6 (25/11/2026): M05, 3 arquivos CSV com a coluna `origem` e licença CC BY 4.0; seção 4 (dataset) completa. v0.5 (21/11/2026): M04, ~100 exemplos de treino e validação escritos à mão e ~220 gerados pelo `qwen3:8b` local, todos revisados (seção 4.3). v0.4 (21/11/2026): M03, cerca de 400 exemplos, com teste de 80 escrito só à mão (seção 4.2). v0.3 (21/11/2026): M02, a entrada tem a intenção anterior e a mensagem (seção 4.1). v0.2 (20/11/2026): M01, o modelo classifica a intenção (seção 3). As seções 4 a 9 serão preenchidas uma por vez.
 > **Autor:** Paulo Oliveira
 > **Depende de:** 01-PRD (Parte B), 05-Ferramentas MCP (filtros da `buscarProdutos`) e 06-Agentes (intenções e as 20 perguntas de teste).
 
@@ -178,7 +178,43 @@ NENHUMA,vcs trocam produto vencido?,POLITICAS,gerado
 
 ## 5. Baseline
 
-*A preencher.* Já decidido no PRD: classificador de intenção com **scikit-learn**. Ponto de partida a confirmar: TF-IDF com regressão logística.
+*Decidido em 25/11/2026 (M06).*
+
+Um *pipeline* (sequência de etapas) do scikit-learn, no caderno `ml/notebooks/02_baseline.ipynb` (02, seção 8):
+
+```python
+from sklearn.pipeline import make_pipeline
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+
+baseline = make_pipeline(
+    TfidfVectorizer(analyzer="char_wb", ngram_range=(2, 5), strip_accents="unicode"),
+    LogisticRegression(max_iter=1000),
+)
+```
+
+| Peça | O que faz |
+| --- | --- |
+| `TfidfVectorizer` | Transforma o texto em números (TF-IDF, *Term Frequency–Inverse Document Frequency*: dá mais peso ao que é frequente na mensagem e raro no conjunto) |
+| `strip_accents="unicode"` | Remove os acentos ("café" e "cafe" viram a mesma coisa). Letras minúsculas já são o padrão |
+| `analyzer="char_wb"`, `ngram_range=(2, 5)` | Usa pedaços de 2 a 5 letras dentro de cada palavra, em vez de palavras inteiras. Tolera erros de digitação e abreviações (M04): "trca" e "troca" ainda dividem pedaços |
+| `LogisticRegression` | O classificador que escolhe uma das 4 intenções. `max_iter=1000` só dá mais tentativas para o cálculo terminar |
+
+**Entrada:** a intenção anterior e a mensagem num texto só (M02), por exemplo `"PRODUTOS | e o segundo?"`. A coluna `origem` não entra (M05).
+
+**Uso dos dados:**
+
+1. Treinar com `treino.csv`.
+2. Usar `validacao.csv` para **uma única comparação**: pedaços de 2 a 5 letras (`char_wb`, `(2, 5)`) contra palavras inteiras (`word`, `(1, 2)`). Fica a configuração que acertar mais.
+3. O `teste.csv` só é usado **uma vez, no fim**, junto com os outros concorrentes (seção 7).
+
+**Por que assim:** poucas linhas, fáceis de explicar inteiras; treina em segundos, sem placa de vídeo; e é o baseline clássico para classificar texto.
+
+**Alternativas descartadas:**
+
+- Pedaços de até 8 letras: viram quase palavras inteiras, perdem a tolerância a erros de digitação e, com ~270 exemplos de treino, aumentam o risco de o modelo decorar o treino (*overfitting*), com ganho provável pequeno.
+- Outros classificadores (SVM, *Support Vector Machine*; Naive Bayes): ganho provável pequeno e tiraria o foco da pesquisa.
+- Busca automática de parâmetros (*grid search*): com ~50 exemplos de validação, o risco é ajustar demais a eles.
 
 ## 6. Fine-tuning
 
@@ -205,6 +241,7 @@ NENHUMA,vcs trocam produto vencido?,POLITICAS,gerado
 | M03 | Cerca de 400 exemplos (~100 por intenção): ~270 de treino, ~50 de validação e 80 de teste (20 por intenção), escrito só à mão e com as 20 perguntas do 06; mesma quantidade por intenção; metade primeira mensagem, um quarto continuação e um quarto troca de assunto (seção 4.2) |
 | M04 | Treino e validação: ~100 exemplos escritos à mão e ~220 gerados pelo `qwen3:8b` no Ollama local (licença Apache 2.0), com variedade de escrita e revisão um a um; o prompt de geração fica salvo no repositório (seção 4.3) |
 | M05 | Três arquivos CSV em UTF-8 (`treino.csv`, `validacao.csv`, `teste.csv`) em `ml/dados/`, com as colunas da M02 e mais `origem` (`manual` ou `gerado`, só para a análise); licença CC BY 4.0 (seção 4.4) |
+| M06 | Baseline: `TfidfVectorizer(analyzer="char_wb", ngram_range=(2, 5), strip_accents="unicode")` + `LogisticRegression`; entrada "intenção anterior \| mensagem"; a validação compara só com palavras inteiras (`word`, `(1, 2)`); teste usado uma vez, no fim (seção 5) |
 
 ## 11. Perguntas em aberto
 
@@ -215,7 +252,8 @@ NENHUMA,vcs trocam produto vencido?,POLITICAS,gerado
 | [x] M03: tamanho e divisão do dataset. **~400 exemplos, teste de 80 escrito à mão** (21/11/2026) | — | Seção 4.2 |
 | [x] M04: como gerar os exemplos de treino e validação. **~100 à mão + ~220 gerados pelo `qwen3:8b` local, revisados** (21/11/2026) | — | Seção 4.3 |
 | [x] M05: formato do arquivo e licença de publicação. **3 CSV em UTF-8 com a coluna `origem`; CC BY 4.0** (25/11/2026) | — | Seção 4.4 |
-| [ ] Modelo base de ~4B | Antes do fine-tuning | Seção 6 |
+| [x] M06: modelo do baseline. **TF-IDF com pedaços de 2 a 5 letras + regressão logística** (25/11/2026) | — | Seção 5 |
+| [ ] M07: modelo base de ~4B para o fine-tuning | Próxima decisão | Seção 6 |
 | [ ] O `qwen3:8b` e o modelo ~4B cabem juntos nos 8 GB de VRAM, ou o Ollama vai alternar entre eles (mais espera)? | Seção 9, com teste prático | Seção 9 |
 | [ ] Se o scikit-learn vencer, o que vai para a loja? (Ele roda em Python, e a loja é Java) | Depois da avaliação | Seções 7 e 9 |
 
@@ -225,6 +263,7 @@ NENHUMA,vcs trocam produto vencido?,POLITICAS,gerado
 - [Qwen3: modelos densos de 0.6B a 32B sob licença Apache 2.0 (blog oficial do Qwen)](https://qwenlm.github.io/blog/qwen3/)
 - [Termos de uso do Claude.ai, seção 3 (Anthropic)](https://www.anthropic.com/legal/consumer-terms)
 - [Hugging Face: formatos aceitos no upload de datasets, entre eles CSV (documentação oficial)](https://huggingface.co/docs/datasets/v2.10.0/upload_dataset)
+- [scikit-learn: `TfidfVectorizer`, parâmetros `analyzer`, `ngram_range` e `strip_accents` (documentação oficial)](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html)
 - [Text Classification in the LLM Era: Where do we stand? (artigo, arXiv)](https://arxiv.org/pdf/2502.11830): regressão logística competitiva com LLMs ajustados em classificação
 - [Reconhecimento de intenção em e-commerce multilíngue com QLoRA (artigo, arXiv)](https://arxiv.org/pdf/2510.21970v1)
 - [Como treinar um modelo de decisão para classificar intenções com Unsloth e Qwen3.5-4B (Machine Learning Mastery)](https://machinelearningmastery.com/how-to-train-your-own-decision-model-like-jev-using-unsloth/)
