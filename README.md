@@ -65,7 +65,7 @@ aislesmart/
 | [04-Contratos de API](docs/04-Contratos-de-API.md) | Endpoints da loja e do chat, formato de erros e eventos do streaming | ✅ Rascunho v0.4 |
 | [05-Ferramentas MCP](docs/05-Ferramentas-MCP.md) | Ferramentas que o assistente pode usar: entrada, saída, erros e servidor MCP | ✅ Rascunho v0.5 |
 | [06-Agentes](docs/06-Agentes.md) | Roteador, papel e instruções de cada agente, segurança e perguntas de teste | ✅ v1.0 |
-| [07-Machine Learning](docs/07-Machine-Learning.md) | Dados, treino, avaliação e publicação (Parte B) | 🟡 Em andamento (v0.10) |
+| [07-Machine Learning](docs/07-Machine-Learning.md) | Dados, treino, avaliação e publicação (Parte B) | 🟡 Em andamento (v0.11) |
 
 ## Roteiro
 
