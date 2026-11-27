@@ -1,6 +1,6 @@
 # 07-Machine Learning
 
-> **Status:** rascunho v0.11 (27/11/2026): M10 decidida (seção 7): métricas, leitura das respostas como na loja e medição do tempo. v0.10 (26/11/2026): M09, exportação em GGUF `q4_k_m` para o Ollama como `aislesmart-intencao`; seção 6 (fine-tuning) completa. v0.9 (26/11/2026): M08, configuração do treino com os valores recomendados pelo Unsloth (seção 6.2). v0.8 (25/11/2026): M07, modelo base Qwen3-4B-Instruct-2507 (seção 6.1). v0.7 (25/11/2026): M06, baseline com TF-IDF de pedaços de 2 a 5 letras e regressão logística (seção 5). v0.6 (25/11/2026): M05, 3 arquivos CSV com a coluna `origem` e licença CC BY 4.0; seção 4 (dataset) completa. v0.5 (21/11/2026): M04, ~100 exemplos de treino e validação escritos à mão e ~220 gerados pelo `qwen3:8b` local, todos revisados (seção 4.3). v0.4 (21/11/2026): M03, cerca de 400 exemplos, com teste de 80 escrito só à mão (seção 4.2). v0.3 (21/11/2026): M02, a entrada tem a intenção anterior e a mensagem (seção 4.1). v0.2 (20/11/2026): M01, o modelo classifica a intenção (seção 3). As seções 4 a 9 serão preenchidas uma por vez.
+> **Status:** rascunho v0.12 (27/11/2026): M11 decidida (seção 8): dataset e modelo em dois repositórios no Hugging Face; glossário da Parte B (seção 2.1). v0.11 (27/11/2026): M10, métricas, leitura das respostas como na loja e medição do tempo (seção 7). v0.10 (26/11/2026): M09, exportação em GGUF `q4_k_m` para o Ollama como `aislesmart-intencao`; seção 6 (fine-tuning) completa. v0.9 (26/11/2026): M08, configuração do treino com os valores recomendados pelo Unsloth (seção 6.2). v0.8 (25/11/2026): M07, modelo base Qwen3-4B-Instruct-2507 (seção 6.1). v0.7 (25/11/2026): M06, baseline com TF-IDF de pedaços de 2 a 5 letras e regressão logística (seção 5). v0.6 (25/11/2026): M05, 3 arquivos CSV com a coluna `origem` e licença CC BY 4.0; seção 4 (dataset) completa. v0.5 (21/11/2026): M04, ~100 exemplos de treino e validação escritos à mão e ~220 gerados pelo `qwen3:8b` local, todos revisados (seção 4.3). v0.4 (21/11/2026): M03, cerca de 400 exemplos, com teste de 80 escrito só à mão (seção 4.2). v0.3 (21/11/2026): M02, a entrada tem a intenção anterior e a mensagem (seção 4.1). v0.2 (20/11/2026): M01, o modelo classifica a intenção (seção 3). As seções 4 a 9 serão preenchidas uma por vez.
 > **Autor:** Paulo Oliveira
 > **Depende de:** 01-PRD (Parte B), 05-Ferramentas MCP (filtros da `buscarProdutos`) e 06-Agentes (intenções e as 20 perguntas de teste).
 
@@ -29,6 +29,28 @@ Definir a **Parte B** do AisleSmart: o trabalho de ML (Machine Learning, aprendi
 ```
 
 > **Para iniciante:** o **baseline** (modelo de referência) é o jeito mais simples de resolver a tarefa. Ele existe para responder uma pergunta: "o fine-tuning (ajuste fino) melhorou de verdade, ou um modelo simples já resolvia?". A **QLoRA** (Quantized Low-Rank Adaptation, adaptação de baixo posto quantizada) comprime o modelo e treina só uma pequena parte dele, por isso cabe nos 8 GB de VRAM (memória da placa de vídeo) da RTX 4060. O **GGUF** é o formato de arquivo de modelo que o Ollama usa.
+
+### 2.1 Glossário para iniciante
+
+Os termos que mais aparecem neste documento, em palavras simples:
+
+| Termo | O que é, em palavras simples |
+| --- | --- |
+| **Dataset** | A lista de exemplos (mensagem de cliente + resposta certa) usada para ensinar e testar os modelos |
+| **Baseline** | O modelo mais simples possível, que serve de régua: se o modelo complexo não for melhor que ele, não vale a pena |
+| **LLM** (*Large Language Model*, modelo de linguagem grande) | Um modelo que lê e escreve texto, como o `qwen3:8b` |
+| **Fine-tuning** (ajuste fino) | Treinar um pouco mais um LLM que já existe, para ele ficar bom numa tarefa específica |
+| **LoRA** (*Low-Rank Adaptation*) | Um jeito de fazer o ajuste fino treinando só uma "peça extra" pequena, sem mexer no modelo inteiro |
+| **QLoRA** | O LoRA com o modelo comprimido durante o treino, para caber em placas de vídeo com pouca memória |
+| **Adaptador LoRA** | O arquivo com a "peça extra" treinada. É pequeno (alguns MB) e só funciona junto do modelo base |
+| **Modelo base** | O LLM original, antes do ajuste fino (aqui, o Qwen3-4B-Instruct-2507) |
+| **GGUF** | O formato de arquivo que o Ollama usa para rodar um modelo. É o modelo inteiro, já com a peça extra embutida, num arquivo só |
+| **`q4_k_m`** | O nível de compressão do arquivo GGUF. Deixa o modelo uns 4 vezes menor, perdendo pouca qualidade |
+| **`Modelfile`** | Um arquivo de texto curto que diz ao Ollama como rodar o modelo (qual arquivo GGUF usar, a instrução fixa e a "temperatura") |
+| **Temperatura** | O quanto o modelo pode variar as respostas. Em 0, ele responde sempre igual |
+| **Hugging Face** | Um site, como um "GitHub de IA", onde se publicam modelos e datasets |
+| **Card** (*model card*, *dataset card*) | A página de apresentação de um modelo ou dataset no Hugging Face (o README dele) |
+| **Token de acesso** | Uma senha especial que permite a um programa enviar arquivos para a sua conta. Nunca vai para o GitHub |
 
 ## 3. A tarefa do modelo
 
@@ -344,7 +366,22 @@ Todas calculadas com o scikit-learn (`accuracy_score`, `f1_score`, `confusion_ma
 
 ## 8. Publicação
 
-*A preencher.* Já decidido no PRD: dataset e modelo no **Hugging Face**, o modelo em formato **GGUF**.
+*Decidido em 27/11/2026 (M11).* A publicação acontece **depois da avaliação** (seção 7), para as páginas já trazerem os resultados. O nome de usuário no Hugging Face ainda não existe; aparece como `<usuario-hf>` até a conta ser criada (só é preciso na hora de publicar).
+
+**Dois repositórios no Hugging Face:**
+
+| Repositório | O que vai nele | Página de apresentação (card) |
+| --- | --- | --- |
+| `<usuario-hf>/aislesmart-intencoes-ptbr` (dataset) | Os 3 arquivos CSV (M05) | Licença CC BY 4.0, idioma português, tarefa de classificação de texto; como os exemplos foram feitos (M04), com o prompt da geração; limitações (loja fictícia, dataset pequeno, parte gerada por LLM) |
+| `<usuario-hf>/aislesmart-intencao-qwen3-4b` (modelo) | O arquivo do modelo pronto para o Ollama (GGUF `q4_k_m`), o arquivo de configuração do Ollama (`Modelfile`) e a peça treinada separada (adaptador LoRA) (M09) | Modelo base e licença Apache 2.0; configuração do treino (M08); **a tabela de resultados da M10, mesmo que o baseline vença**; uso pretendido e limitações |
+
+**Como enviar:** o modelo pode ser enviado pelo próprio Unsloth (`model.push_to_hub_gguf(...)`); o dataset, pela biblioteca `huggingface_hub` ou pelo site. Depois de publicado, qualquer pessoa roda o modelo com `ollama run hf.co/<usuario-hf>/aislesmart-intencao-qwen3-4b:Q4_K_M`.
+
+**Ligações:** o README do GitHub aponta para os dois repositórios do Hugging Face, e os cards apontam de volta para o GitHub.
+
+**Segurança:** o token de acesso do Hugging Face (com permissão de escrita) fica numa variável de ambiente ou no login do `huggingface-cli`, **nunca** num caderno ou arquivo do repositório.
+
+**Alternativa descartada:** publicar só o modelo. O dataset é a parte que mais mostra o trabalho (criação, revisão e documentação), e a vaga pede modelos e datasets no Hugging Face.
 
 ## 9. Integração com a Parte A
 
@@ -364,6 +401,7 @@ Todas calculadas com o scikit-learn (`accuracy_score`, `f1_score`, `confusion_ma
 | M08 | Treino com os valores recomendados pelo Unsloth: exemplo em formato de conversa com instrução fixa (a mesma na avaliação), aprendendo só a resposta; LoRA `r=16`, `lora_alpha=16`, todas as camadas lineares; taxa `2e-4`, até 3 épocas com a melhor escolhida pela validação, 256 tokens, semente fixa (seção 6.2) |
 | M09 | Exportação com `save_pretrained_gguf` em `q4_k_m` (mesma compressão do modelo sem ajuste); `Modelfile` gerado pelo Unsloth, com a instrução fixa da M08 e `temperature 0`; nome no Ollama `aislesmart-intencao`; adaptador LoRA guardado para publicação (seção 6.3) |
 | M10 | Avaliação no teste, uma vez: taxa de acerto (meta 85%), F1 macro, matriz de confusão e acerto por situação; respostas dos LLMs lidas pela regra do `interpretar` (A03) em Python, contando as fora do formato; mediana do tempo com aquecimento e um modelo por vez na placa; uma rodada (`temperature 0`) (seção 7) |
+| M11 | Publicar, depois da avaliação, dois repositórios no Hugging Face: o dataset (3 CSV, card com licença, origem dos dados e limitações) e o modelo (GGUF `q4_k_m`, `Modelfile`, adaptador LoRA; card com a tabela de resultados mesmo que o baseline vença); ligações entre GitHub e Hugging Face; token nunca no repositório (seção 8) |
 
 ## 11. Perguntas em aberto
 
@@ -379,7 +417,9 @@ Todas calculadas com o scikit-learn (`accuracy_score`, `f1_score`, `confusion_ma
 | [x] M08: configuração do treino. **Valores recomendados pelo Unsloth** (26/11/2026) | — | Seção 6.2 |
 | [x] M09: exportação do modelo ajustado para o Ollama. **GGUF `q4_k_m`, `aislesmart-intencao`** (26/11/2026) | — | Seção 6.3 |
 | [x] M10: como avaliar. **Acerto, F1 macro, matriz de confusão, por situação; mediana do tempo** (27/11/2026) | — | Seção 7 |
-| [ ] M11: o que publicar no Hugging Face e como (dataset, modelo, cards) | Próxima decisão | Seção 8 |
+| [x] M11: o que publicar no Hugging Face. **Dataset e modelo em dois repositórios** (27/11/2026) | — | Seção 8 |
+| [ ] Criar a conta no Hugging Face e trocar `<usuario-hf>` pelo nome de usuário | Antes da publicação | Seção 8 |
+| [ ] M12: como o modelo entra na loja | Próxima decisão | Seção 9 |
 | [ ] O `qwen3:8b` e o modelo ~4B cabem juntos nos 8 GB de VRAM, ou o Ollama vai alternar entre eles (mais espera)? | Seção 9, com teste prático | Seção 9 |
 | [ ] Se o scikit-learn vencer, o que vai para a loja? (Ele roda em Python, e a loja é Java) | Depois da avaliação | Seções 7 e 9 |
 
@@ -396,6 +436,7 @@ Todas calculadas com o scikit-learn (`accuracy_score`, `f1_score`, `confusion_ma
 - [Unsloth: salvar em GGUF e métodos de compressão (documentação oficial)](https://unsloth.ai/docs/basics/inference-and-deployment/saving-to-gguf)
 - [Unsloth: salvar para o Ollama e criação automática do `Modelfile` (documentação oficial)](https://unsloth.ai/docs/basics/inference-and-deployment/saving-to-ollama)
 - [scikit-learn: `f1_score` e a média `macro` (documentação oficial)](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html)
+- [Hugging Face: enviar um dataset, formatos aceitos e card (documentação oficial)](https://huggingface.co/docs/datasets/main/en/upload_dataset)
 - [Text Classification in the LLM Era: Where do we stand? (artigo, arXiv)](https://arxiv.org/pdf/2502.11830): regressão logística competitiva com LLMs ajustados em classificação
 - [Reconhecimento de intenção em e-commerce multilíngue com QLoRA (artigo, arXiv)](https://arxiv.org/pdf/2510.21970v1)
 - [Como treinar um modelo de decisão para classificar intenções com Unsloth e Qwen3.5-4B (Machine Learning Mastery)](https://machinelearningmastery.com/how-to-train-your-own-decision-model-like-jev-using-unsloth/)
