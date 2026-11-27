@@ -1,6 +1,6 @@
 # 07-Machine Learning
 
-> **Status:** rascunho v0.8 (25/11/2026): M07 decidida (seção 6.1): modelo base Qwen3-4B-Instruct-2507. v0.7 (25/11/2026): M06, baseline com TF-IDF de pedaços de 2 a 5 letras e regressão logística (seção 5). v0.6 (25/11/2026): M05, 3 arquivos CSV com a coluna `origem` e licença CC BY 4.0; seção 4 (dataset) completa. v0.5 (21/11/2026): M04, ~100 exemplos de treino e validação escritos à mão e ~220 gerados pelo `qwen3:8b` local, todos revisados (seção 4.3). v0.4 (21/11/2026): M03, cerca de 400 exemplos, com teste de 80 escrito só à mão (seção 4.2). v0.3 (21/11/2026): M02, a entrada tem a intenção anterior e a mensagem (seção 4.1). v0.2 (20/11/2026): M01, o modelo classifica a intenção (seção 3). As seções 4 a 9 serão preenchidas uma por vez.
+> **Status:** rascunho v0.9 (26/11/2026): M08 decidida (seção 6.2): configuração do treino com os valores recomendados pelo Unsloth. v0.8 (25/11/2026): M07, modelo base Qwen3-4B-Instruct-2507 (seção 6.1). v0.7 (25/11/2026): M06, baseline com TF-IDF de pedaços de 2 a 5 letras e regressão logística (seção 5). v0.6 (25/11/2026): M05, 3 arquivos CSV com a coluna `origem` e licença CC BY 4.0; seção 4 (dataset) completa. v0.5 (21/11/2026): M04, ~100 exemplos de treino e validação escritos à mão e ~220 gerados pelo `qwen3:8b` local, todos revisados (seção 4.3). v0.4 (21/11/2026): M03, cerca de 400 exemplos, com teste de 80 escrito só à mão (seção 4.2). v0.3 (21/11/2026): M02, a entrada tem a intenção anterior e a mensagem (seção 4.1). v0.2 (20/11/2026): M01, o modelo classifica a intenção (seção 3). As seções 4 a 9 serão preenchidas uma por vez.
 > **Autor:** Paulo Oliveira
 > **Depende de:** 01-PRD (Parte B), 05-Ferramentas MCP (filtros da `buscarProdutos`) e 06-Agentes (intenções e as 20 perguntas de teste).
 
@@ -241,7 +241,48 @@ Já decidido no PRD: **QLoRA** no **Unsloth**, treinado no próprio computador (
 
 ### 6.2 Configuração do treino
 
-*A preencher (M08).*
+*Decidido em 26/11/2026 (M08).* Valores recomendados pela documentação do Unsloth, sem ajuste manual.
+
+**Formato de cada exemplo** (conversa curta, com a mesma instrução em todos):
+
+```
+[sistema]    Classifique a mensagem do cliente de uma loja de alimentos em uma
+             intenção: PRODUTOS, POLITICAS, PEDIDOS ou FORA_DO_TEMA.
+             Responda só com a palavra.
+[usuário]    Intenção anterior: PRODUTOS
+             Mensagem: e o segundo?
+[assistente] PRODUTOS
+```
+
+- O modelo aprende **só a resposta** (a palavra da intenção), não a instrução: opção `train_on_responses_only` do Unsloth.
+- **A mesma instrução é usada na avaliação** do modelo sem ajuste e do `qwen3:8b` (seção 7), para que a única diferença entre eles seja o treino.
+- O texto final da instrução pode ser refinado no caderno, desde que seja um só para todos os concorrentes.
+
+**Parâmetros do LoRA:**
+
+| Parâmetro | Valor | O que é |
+| --- | --- | --- |
+| `r` (posto) | 16 | Quanto o LoRA pode aprender; o Unsloth sugere 16 ou 32, e 16 basta para uma tarefa simples |
+| `lora_alpha` | 16 | A "força" do ajuste; regra comum: o posto vezes 1 ou 2 |
+| Camadas treinadas | Todas as camadas lineares | Padrão dos exemplos do Unsloth |
+
+**Treino:**
+
+| Parâmetro | Valor | Por quê |
+| --- | --- | --- |
+| Taxa de aprendizado | `2e-4` | Ponto de partida recomendado pelo Unsloth para LoRA e QLoRA |
+| Épocas | até 3 | Recomendação de 1 a 3; mais que isso aumenta o risco de decorar o treino |
+| Validação | ao fim de cada época | Fica a época com o menor erro em `validacao.csv` |
+| Tamanho máximo do texto | 256 tokens | As mensagens são curtas; economiza memória |
+| Semente (*seed*) | número fixo | Para repetir o treino com o mesmo resultado |
+
+O treino roda no caderno `ml/notebooks/03_finetuning.ipynb` (02, seção 8).
+
+**Alternativa descartada:** testar várias combinações de parâmetros. Com ~50 exemplos de validação, o ganho seria pequeno e o risco de ajustar demais à validação, alto.
+
+### 6.3 Exportação para o Ollama
+
+*A preencher (M09).*
 
 ## 7. Avaliação
 
@@ -266,6 +307,7 @@ Já decidido no PRD: **QLoRA** no **Unsloth**, treinado no próprio computador (
 | M05 | Três arquivos CSV em UTF-8 (`treino.csv`, `validacao.csv`, `teste.csv`) em `ml/dados/`, com as colunas da M02 e mais `origem` (`manual` ou `gerado`, só para a análise); licença CC BY 4.0 (seção 4.4) |
 | M06 | Baseline: `TfidfVectorizer(analyzer="char_wb", ngram_range=(2, 5), strip_accents="unicode")` + `LogisticRegression`; entrada "intenção anterior \| mensagem"; a validação compara só com palavras inteiras (`word`, `(1, 2)`); teste usado uma vez, no fim (seção 5) |
 | M07 | Modelo base do fine-tuning: `Qwen3-4B-Instruct-2507` (Apache 2.0; só modo sem pensamento; ~4 GB de VRAM no QLoRA; ~2,5 GB no Ollama em Q4_K_M). Qwen3.5-4B, Gemma 3 4B e Llama 3.2 3B descartados (seção 6.1) |
+| M08 | Treino com os valores recomendados pelo Unsloth: exemplo em formato de conversa com instrução fixa (a mesma na avaliação), aprendendo só a resposta; LoRA `r=16`, `lora_alpha=16`, todas as camadas lineares; taxa `2e-4`, até 3 épocas com a melhor escolhida pela validação, 256 tokens, semente fixa (seção 6.2) |
 
 ## 11. Perguntas em aberto
 
@@ -278,7 +320,8 @@ Já decidido no PRD: **QLoRA** no **Unsloth**, treinado no próprio computador (
 | [x] M05: formato do arquivo e licença de publicação. **3 CSV em UTF-8 com a coluna `origem`; CC BY 4.0** (25/11/2026) | — | Seção 4.4 |
 | [x] M06: modelo do baseline. **TF-IDF com pedaços de 2 a 5 letras + regressão logística** (25/11/2026) | — | Seção 5 |
 | [x] M07: modelo base de ~4B para o fine-tuning. **Qwen3-4B-Instruct-2507** (25/11/2026) | — | Seção 6.1 |
-| [ ] M08: configuração do treino (formato do exemplo, parâmetros do LoRA, épocas) | Próxima decisão | Seção 6.2 |
+| [x] M08: configuração do treino. **Valores recomendados pelo Unsloth** (26/11/2026) | — | Seção 6.2 |
+| [ ] M09: exportação do modelo ajustado para o Ollama (GGUF, compressão) | Próxima decisão | Seção 6.3 |
 | [ ] O `qwen3:8b` e o modelo ~4B cabem juntos nos 8 GB de VRAM, ou o Ollama vai alternar entre eles (mais espera)? | Seção 9, com teste prático | Seção 9 |
 | [ ] Se o scikit-learn vencer, o que vai para a loja? (Ele roda em Python, e a loja é Java) | Depois da avaliação | Seções 7 e 9 |
 
@@ -291,6 +334,7 @@ Já decidido no PRD: **QLoRA** no **Unsloth**, treinado no próprio computador (
 - [scikit-learn: `TfidfVectorizer`, parâmetros `analyzer`, `ngram_range` e `strip_accents` (documentação oficial)](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html)
 - [Unsloth: requisitos de VRAM para QLoRA por tamanho de modelo (documentação oficial)](https://docs.unsloth.ai/get-started/beginner-start-here/unsloth-requirements)
 - [Unsloth: Qwen3-4B-Instruct-2507 em GGUF, só modo sem pensamento (Hugging Face)](https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF)
+- [Unsloth: guia de hiperparâmetros do LoRA, posto, alpha, taxa de aprendizado e épocas (documentação oficial)](https://unsloth.ai/docs/get-started/fine-tuning-llms-guide/lora-hyperparameters-guide)
 - [Text Classification in the LLM Era: Where do we stand? (artigo, arXiv)](https://arxiv.org/pdf/2502.11830): regressão logística competitiva com LLMs ajustados em classificação
 - [Reconhecimento de intenção em e-commerce multilíngue com QLoRA (artigo, arXiv)](https://arxiv.org/pdf/2510.21970v1)
 - [Como treinar um modelo de decisão para classificar intenções com Unsloth e Qwen3.5-4B (Machine Learning Mastery)](https://machinelearningmastery.com/how-to-train-your-own-decision-model-like-jev-using-unsloth/)
